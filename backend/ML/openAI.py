@@ -10,6 +10,8 @@ from langchain.memory import ConversationBufferMemory
 import json
 import os
 from dotenv import load_dotenv
+from rapidfuzz import fuzz
+
 
 load_dotenv()
 
@@ -75,9 +77,9 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
     
     # Define model
     llm = ChatOpenAI(
-	temperature=1,
-	openai_api_key= os.getenv("OPENAI_KEY"),
-	model_name="gpt-3.5-turbo-0125"
+        temperature=1,
+        openai_api_key=os.getenv("OPENAI_KEY"),
+        model_name="gpt-3.5-turbo-0125"
     )
 
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=False)
@@ -88,32 +90,72 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
         memory=memory
     )
 
-    # Prompt
+    # Function to check similarity
+    def are_source_names_correct(trainee_names, ideal_names):
+        similarity_threshold = 70 
+        missing_names = []
+
+        for ideal_name_original in ideal_names:
+            ideal_name = ideal_name_original.lower()
+            found_match = False
+            for trainee_name_original in trainee_names:
+                trainee_name = trainee_name_original.lower()
+                similarity_score = fuzz.token_sort_ratio(trainee_name, ideal_name)
+                if similarity_score >= similarity_threshold:
+                    found_match = True
+                    break
+
+            if not found_match:
+                missing_names.append(ideal_name_original)
+
+        if missing_names:
+            print(f"Missing ideal names: {missing_names}")
+            return False, missing_names  
+        else:
+            print("All trainee source names are correct.")
+            return True, []  
+
+    # Check if source names are correct
+    trainee_names = system_name.split(", ")
+    ideal_names = ideal_system_name.split(", ")
+
+    print(trainee_names)
+    print(ideal_names)
+    
+    is_correct, missing_names = are_source_names_correct(trainee_names, ideal_names)
+    print(is_correct)
+    print(missing_names)
+    
+    # Determine feedback based on correctness
+    if is_correct:
+        feedback = "The source(s) referenced by the trainee are complete."
+    else:
+        feedback = f"The source(s) referenced by the trainee are incomplete. The missing source name(s) are {', '.join(missing_names)}."
+    print(feedback)
+
+    # Prompt template and further processing
     prompt_template = PromptTemplate.from_template(
-    """
-    I will give you a question, a customer service trainee's response to that question, the ideal response to that question, the sources from which the trainee obtained their response (system name and system URL), and the ideal source from which the trainee should be obtaining their response.
-    Please assess the trainee's response to the question. Do not actually answer the question, but evaluate the answer only using the context given and the ideal answer.
-    Please consider the system name and system URL, aiming for the trainee's response to closely match the ideal system name and system URL, allowing for minor variations in spelling or URL format as long as they are similar. The system name and system URL could be a single name and URL or multiple names and URLs.
-    Please give the trainee's response a score out of 5 for accuracy, precision and tone. Accuracy refers to if the factually correct answers were provided, precision refers to whether the answer has enough details and is concise, and tone refers to whether the tone of the answer is respectful and professional. 
-    Please take note that the ideal response scored 5 for accuracy, precision and tone and use it as a point of reference.
-    Please also give some general feedback for improvement.
+        """
+        I will give you a question, a customer service trainee's response to that question, and the ideal response to that question. 
+        Please assess the trainee's response to the question. Do not actually answer the question, but evaluate the answer only using the context given and the ideal answer.
+        Please give the trainee's response a score out of 5 for accuracy, precision and tone. Accuracy refers to if the factually correct answers were provided, precision refers to whether the answer has enough details and is concise, and tone refers to whether the tone of the answer is respectful and professional. 
+        Please take note that the ideal response scored 5 for accuracy, precision and tone and use it as a point of reference.
+        Please also give some general feedback for improvement.
+        Please incorporate the following text in your Accuracy Feedback: {feedback}
 
+        It is acceptable to give the trainee full marks if they answered similarly to the ideal response, and if you do not have improvements to give, please give a score of 5. Do not mention the existence of the ideal response when providing your feedback.
+        
+        Please give your response in this JSON format, where score is an integer and all feedbacks are a string: 
+        "Accuracy": score, "Precision": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Precision Feedback": precision_feedback, "Tone Feedback": tone_feedback ,"Feedback": feedback_response
+        Do not include backticks and do wrap the feedback in quotation marks.
+        
+        Question: {question}
+        Trainee's response: {response}
+        Ideal response: {ideal}
+        Accuracy Feedback: {feedback} 
+        
+        """)
 
-    It is acceptable to give the trainee full marks if they answered similarly to the ideal response, and if you do not have improvements to give, please give a score of 5. Do not mention the existence of the ideal response when providing your feedback.
-
-    Please give your response in this JSON format, where score is an integer and all feedbacks are a string: 
-    "Accuracy": score, "Precision": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Precision Feedback": precision_feedback, "Tone Feedback": tone_feedback ,"Feedback": feedback_response
-    Do not include backticks and do wrap the feedback in quotation marks.
-
-    Question: {question}
-    Trainee's response: {response}
-    Ideal response: {ideal}
-    Trainee's response to System Name(s): {system_name}
-    Trainee's response to System URL(s): {system_url}
-    Ideal System Name(s): {ideal_system_name}
-    Ideal System URL(s): {ideal_system_url}
-    """)
-
-    result = qa.run({"question": prompt_template.format(question=question, response=response, ideal=ideal, ideal_system_name=ideal_system_name, ideal_system_url=ideal_system_url, system_name=system_name, system_url=system_url)})
+    result = qa.run({"question": prompt_template.format(question=question, response=response, ideal=ideal, ideal_system_name=ideal_system_name, ideal_system_url=ideal_system_url, system_name=system_name, system_url=system_url, feedback=feedback)})
     
     return result

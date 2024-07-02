@@ -8,7 +8,7 @@ import { ChevronLeft } from "@mui/icons-material";
 // components
 import isAuth from "../../components/isAuth";
 
-function Exercises() {
+function Exercises(user) {
   const router = useRouter();
   const { submit } = router.query;
   const [name, setName] = useState("");
@@ -16,13 +16,15 @@ function Exercises() {
 
   useEffect(() => {
     async function getQuestions() {
-      const user_id = 1;
+      const userString = localStorage.getItem("loggedUser");
+      const user = JSON.parse(userString);
+
       if (router.isReady) {
         const scheme_name = router.query.slug;
         window.localStorage.setItem("schemeName", scheme_name);
 
         const res = await fetch(
-          `https://d17ygk7qno65io.cloudfront.net/table/${user_id}/${scheme_name}`
+          `https://d17ygk7qno65io.cloudfront.net/table/${user.uuid}/${scheme_name}`
         );
         const questions = await res.json();
 
@@ -168,7 +170,7 @@ function Exercises() {
                     className={`${tableCenterCellStyle} hover:underline hover:underline-offset-2 `}
                     onClick={() => handleReviewNav(question.attempt)}
                   >
-                    {question.attempt ? "Click to View" : null}
+                    {question.attempt ? "Click to view latest attempt" : null}
                   </td>
                 </tr>
               ))}

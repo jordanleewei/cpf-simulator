@@ -159,7 +159,7 @@ function AddQuestions() {
 
         <ButtonGroup
           variant="flat"
-          className="flex flex-row md:flex-nowrap items-center gap-2 pl-8"
+          className="flex flex-row md:flex-nowrap items-center gap-3 pl-9"
         >
           <span className="flex w-1/4">
             <p className=" text-red-500">*</p>Difficulty:{" "}
@@ -235,7 +235,7 @@ function AddQuestions() {
             {idealSystems.map((idealSystem, index) => (
               <div key={index} className="flex justify-center w-5/6">
                 <div className="w-full ml-3">
-                <p className=" text-red-500 inline">*</p>Ideal System Name:
+                <p className=" text-red-500 inline">*</p>Verified System Name:
                   <textarea
                     required={true}
                     id={`ideal-system-name-${index}`}
@@ -244,13 +244,13 @@ function AddQuestions() {
                       bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
                       focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
                       dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    placeholder="Enter the ideal system name"
+                    placeholder="Enter the verified system name"
                     value={idealSystem.name}
                     onChange={(e) => handleIdealSystemNameChange(index, e.target.value)}
                     />
                     </div>
                     <div className="w-full ml-3">
-                    <p className=" text-red-500 inline">*</p>Ideal System URL:
+                    <p className=" text-red-500 inline">*</p>Verified System URL:
                   <textarea
                     required={true}
                     id={`ideal-system-url-${index}`}
@@ -259,7 +259,7 @@ function AddQuestions() {
                       bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
                       focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
                       dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    placeholder="Enter the ideal system URL"
+                    placeholder="Enter the verified system URL"
                     value={idealSystem.url}
                     onChange={(e) => handleIdealSystemUrlChange(index, e.target.value)}
                   />

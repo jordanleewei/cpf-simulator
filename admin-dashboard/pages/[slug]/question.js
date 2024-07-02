@@ -66,7 +66,7 @@ function Question() {
               <p>{question.ideal}</p>
             </div>
             <div>
-              <p className="font-bold">System Names:</p>
+              <p className="font-bold">Verified System Names:</p>
               <ul>
                 {systemNames.map((name, index) => (
                   <li key={index}>{name}</li>
@@ -74,7 +74,7 @@ function Question() {
               </ul>
             </div>
             <div>
-              <p className="font-bold">System URLs:</p>
+              <p className="font-bold">Verified System URLs:</p>
               <ul>
                 {systemUrls.map((url, index) => (
                   <li key={index}>{url}</li>

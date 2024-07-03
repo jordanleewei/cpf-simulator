@@ -10,7 +10,7 @@ from langchain.memory import ConversationBufferMemory
 import json
 import os
 from dotenv import load_dotenv
-from rapidfuzz import fuzz
+from fuzzywuzzy import fuzz
 
 
 load_dotenv()

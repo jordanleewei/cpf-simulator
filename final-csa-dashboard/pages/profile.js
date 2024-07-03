@@ -10,45 +10,50 @@ import AverageScores from "../components/AverageScores.jsx";
 import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
 function Profile({ user }) {
-  const [attempts, setAttempts] = useState("");
-  const [subCat, setSubCat] = useState("");
+  const [attempts, setAttempts] = useState([]);
+  const [subCat, setSubCat] = useState([]);
   const [userName, setUserName] = useState("");
-  const loginDetails = user;
 
   useEffect(() => {
-    if (user == "") {
-      setUserName("");
-    } else if (user && user.name) {
-      setUserName(user.name);
+    async function fetchUserData() {
+      try {
+        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user.uuid}`);
+        const userData = await res.json();
+        if (res.ok) {
+          setUserName(userData.name);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    }
+
+    if (user) {
+      fetchUserData();
     }
   }, [user]);
 
   useEffect(() => {
     async function getAttempts() {
       try {
-        const res = await fetch(
-          `https://d17ygk7qno65io.cloudfront.net/attempt/user/${user.uuid}`
-        );
+        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/attempt/user/${user.uuid}`);
         const attemptRes = await res.json();
         if (res.ok) {
           setAttempts(attemptRes.reverse());
         }
-      } catch (e) {
-        console.log(e);
+      } catch (error) {
+        console.error("Error fetching attempts:", error);
       }
     }
 
     async function getSubCat() {
       try {
-        const res = await fetch(
-          `https://d17ygk7qno65io.cloudfront.net/user/${user.uuid}/schemes`
-        );
+        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user.uuid}/schemes`);
         const subCatData = await res.json();
         if (res.ok) {
           setSubCat(subCatData);
         }
-      } catch (e) {
-        console.log(e);
+      } catch (error) {
+        console.error("Error fetching subcategories:", error);
       }
     }
 
@@ -77,10 +82,9 @@ function Profile({ user }) {
       "Tone Score",
     ];
 
-    // Generate rows for each attempt
     const rows = attempts.map((attempt) => [
-      loginDetails.name,
-      loginDetails.email,
+      userName, 
+      user.email, 
       attempt.scheme_name,
       attempt.date,
       `"${attempt.question_title}"`,
@@ -108,56 +112,54 @@ function Profile({ user }) {
   const handleDownload = async () => {
     const csvContent = convertToCSV(attempts);
     const csvBlob = new Blob([csvContent], { type: "text/csv" });
-    saveAs(csvBlob, `${loginDetails.name}_all_attempts.csv`);
+    saveAs(csvBlob, `${userName}_all_attempts.csv`); // Use userName state instead of loginDetails.name
   };
 
   return (
-    <>
-      <div className="bg-light-green p-4">
-        <div className="font-bold text-xl pl-2">Welcome, {userName}</div>
-        <AverageScores className="mt-2" user={user} />
+    <div className="bg-light-green p-4">
+      <div className="font-bold text-xl pl-2">Welcome, {userName}</div>
+      <AverageScores className="mt-2" user={user} />
 
-        <div className="h-max-content flex flex-row items-start">
-          <div className="bg-light-gray rounded-lg w-1/3 mt-4 mr-4 py-5">
-            <h3 className="pl-5 font-bold">Scheme Mastery</h3>
-            <div className="rounded-lg p-5 w-full h-full flex flex-col justify-center items-center gap-5">
-              {subCat == "" ? (
-                <div className="pt-2">No schemes assigned</div>
-              ) : (
-                subCat.map((cat, idx) => (
-                  <ProgressBar
-                    key={idx}
-                    attemptedNum={cat.num_attempted_questions}
-                    qnNum={cat.num_questions}
-                    schemeName={cat.scheme_name}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-          <div className="bg-light-gray rounded-lg w-2/3 mt-4 relative">
-            <h3 className="pl-5 pt-5 font-bold">Practice Details</h3>
-            {attempts != "" ? (
-              <div className="rounded-lg py-4 px-4 h-full flex items-center relative">
-                <CustomTable rows={attempts} />
-                <button
-                  type="button"
-                  className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"
-                  onClick={handleDownload}
-                >
-                  <Download />
-                  Download All
-                </button>
-              </div>
+      <div className="h-max-content flex flex-row items-start">
+        <div className="bg-light-gray rounded-lg w-1/3 mt-4 mr-4 py-5">
+          <h3 className="pl-5 font-bold">Scheme Mastery</h3>
+          <div className="rounded-lg p-5 w-full h-full flex flex-col justify-center items-center gap-5">
+            {subCat.length === 0 ? (
+              <div className="pt-2">No schemes assigned</div>
             ) : (
-              <div className="flex justify-center items-center py-8">
-                No attempts
-              </div>
+              subCat.map((cat, idx) => (
+                <ProgressBar
+                  key={idx}
+                  attemptedNum={cat.num_attempted_questions}
+                  qnNum={cat.num_questions}
+                  schemeName={cat.scheme_name}
+                />
+              ))
             )}
           </div>
         </div>
+        <div className="bg-light-gray rounded-lg w-2/3 mt-4 relative">
+          <h3 className="pl-5 pt-5 font-bold">Practice Details</h3>
+          {attempts.length > 0 ? (
+            <div className="rounded-lg py-4 px-4 h-full flex items-center relative">
+              <CustomTable rows={attempts} />
+              <button
+                type="button"
+                className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"
+                onClick={handleDownload}
+              >
+                <Download />
+                Download All
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center items-center py-8">
+              No attempts
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 

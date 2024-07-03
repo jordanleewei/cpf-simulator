@@ -119,6 +119,24 @@ async def read_user(user_id:str, db: Session = Depends(create_session)):
     }
     return user_data
 
+@app.put("/user/{user_id}", status_code=status.HTTP_200_OK)
+async def update_user(user_id: str, user: UserBase, db: Session = Depends(create_session)):
+    db_user = db.query(UserModel).filter(UserModel.uuid == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_user.email = user.email
+    db_user.name = user.name
+    db_user.access_rights = user.access_rights
+    
+    # if user.password:  # If password is provided, update it
+    #     db_user.hashed_password = pwd_context.hash(user.password)
+
+    db.commit()
+    db.refresh(db_user)
+
+    return user
+
 @app.delete("/user/{user_id}", status_code=status.HTTP_201_CREATED)
 async def delete_user(user_id: str, db: Session = Depends(create_session)):
     db_user = db.query(UserModel).filter(UserModel.uuid == user_id).first()

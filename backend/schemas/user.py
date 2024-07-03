@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class UserBase(BaseModel):
     email: str
-    password: str
+    password: Optional[str] = None
     access_rights: str
     name: str
 
@@ -17,3 +17,5 @@ class UserResponseSchema(BaseModel):
     name: str
     access_rights: str
     schemes: List[str]
+
+

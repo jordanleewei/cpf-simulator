@@ -22,18 +22,13 @@ export const getServerSideProps = async () => {
   });
 
   let allSchemes = await res2.json();
-
-  console.log("allSchemes", allSchemes);
-
-  // Handle case where allSchemes is not an array
-    if (!Array.isArray(allSchemes)) {
-      allSchemes = [];
-    } else {
-      // Format schemes (capitalize first letter)
-      allSchemes = allSchemes.map((scheme) =>
-        scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
-      );
-    }
+  if (!Array.isArray(allSchemes)) {
+    allSchemes = [];
+  } else {
+    allSchemes = allSchemes.map((scheme) =>
+      scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
+    );
+  }
 
   return { props: { teamMembers, allSchemes } };
 };
@@ -46,6 +41,7 @@ function MyTeam({ teamMembers, allSchemes }) {
 
   // states
   const [allTeamMembers, setAllTeamMembers] = useState(teamMembers);
+  const [originalTeamMembers, setOriginalTeamMembers] = useState(teamMembers);
   const [displayMembers, setDisplayMembers] = useState(teamMembers);
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
@@ -83,18 +79,18 @@ function MyTeam({ teamMembers, allSchemes }) {
     const teamMembers = await res.json();
 
     setAllTeamMembers(teamMembers);
+    setOriginalTeamMembers(teamMembers);
   };
 
   async function handleDelete(user_id) {
     try {
       const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user_id}`, {
         method: "DELETE",
-        body: JSON.stringify({ user_id: user_id }),
         headers: {
           "Content-Type": "application/json",
         },
       });
-      if (res) {
+      if (res.ok) {
         setAllTeamMembers(
           allTeamMembers.filter((member) => member.uuid !== user_id)
         );
@@ -109,21 +105,83 @@ function MyTeam({ teamMembers, allSchemes }) {
     }
   }
 
-  function handleNav(id) {
+  const handleNav = (id) => {
     router.push(`/${id}/profile`, undefined, { shallow: true });
-  }
+  };
+
+  const handleCancel = () => {
+    setAllTeamMembers(originalTeamMembers);
+    setDisplayMembers(originalTeamMembers);
+    setEditState(false);
+  };
+
+  const handleChange = (index, field, value) => {
+    setAllTeamMembers((prevMembers) =>
+      prevMembers.map((member, idx) =>
+        idx === index ? { ...member, [field]: value } : member
+      )
+    );
+    setDisplayMembers((prevMembers) =>
+      prevMembers.map((member, idx) =>
+        idx === index ? { ...member, [field]: value } : member
+      )
+    );
+  };
+
+  const handleSave = async () => {
+    try {
+      for (let i = 0; i < allTeamMembers.length; i++) {
+        const member = allTeamMembers[i];
+        const originalMember = originalTeamMembers[i];
+  
+        // Log values for debugging
+        console.log(`Comparing member ${member.uuid}:`);
+        console.log('Current:', member);
+        console.log('Original:', originalMember);
+  
+        // Check if there are any changes
+        if (
+          member.email !== originalMember.email ||
+          member.name !== originalMember.name ||
+          member.access_rights !== originalMember.access_rights
+        ) {
+          console.log(`Changes detected for member ${member.uuid}, updating...`);
+          const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${member.uuid}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: member.email,
+              name: member.name,
+              access_rights: member.access_rights,
+            }),
+          });
+  
+          if (!res.ok) {
+            throw new Error("Failed to update member");
+          }
+        } else {
+          console.log(`No changes for member ${member.uuid}, skipping update.`);
+        }
+      }
+      setEditState(false); // Exit edit mode after successful save
+    } catch (e) {
+      console.log(e);
+      // Handle error (e.g., show error message to user)
+    }
+  };
 
   return (
-    <div className=" w-screen bg-light-green flex items-center justify-center p-4 relative">
-      {/* for delete modal */}
-      {deleteId == "" ? null : (
+    <div className="w-screen bg-light-green flex items-center justify-center p-4 relative">
+      {deleteId && (
         <div className="w-full h-full flex justify-center items-center fixed -top-0.5 z-40">
           <DeleteModal
             id={deleteId}
             setId={setDeleteId}
             text={
               allTeamMembers
-                .filter((member) => member.uuid == deleteId)
+                .filter((member) => member.uuid === deleteId)
                 .map((i) => i.name)[0]
             }
             handleDelete={handleDelete}
@@ -132,10 +190,8 @@ function MyTeam({ teamMembers, allSchemes }) {
         </div>
       )}
 
-      {/* page content */}
       <div className="bg-white min-w-full rounded-md p-6">
         <p className="font-bold">Team members</p>
-        {/* Search bars */}
         <div className="flex flex-row justify-between">
           <div className="flex flex-row gap-3">
             <SearchBar setSearch={setSearch} />
@@ -148,21 +204,27 @@ function MyTeam({ teamMembers, allSchemes }) {
           {editState ? (
             <div className="flex flex-row gap-2">
               <button
-                className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md "
+                className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md"
                 onClick={() => router.push("/addprofile")}
               >
                 Add new profile
               </button>
               <button
-                className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md "
-                onClick={() => setEditState(false)}
+                className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md"
+                onClick={handleSave}
+              >
+                Save
+              </button>
+              <button
+                className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md"
+                onClick={handleCancel}
               >
                 Cancel
               </button>
             </div>
           ) : (
             <button
-              className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md "
+              className="text-white bg-dark-green hover:bg-darker-green px-4 rounded-md"
               onClick={() => setEditState(true)}
             >
               Edit
@@ -170,35 +232,63 @@ function MyTeam({ teamMembers, allSchemes }) {
           )}
         </div>
 
-        {/* Table */}
-        <table className=" w-full table-fixed border border-collapse border-slate-200 mt-2">
+        <table className="w-full table-fixed border border-collapse border-slate-200 mt-2">
           <thead>
             <tr>
-              <th className={`${tableCellStyle} bg-dark-grey `}>Name</th>
+              <th className={`${tableCellStyle} bg-dark-grey`}>Name</th>
               <th className={`${tableCellStyle} bg-dark-grey`}>Email</th>
               <th className={`${tableCellStyle} bg-dark-grey w-1/6`}>Access</th>
-
-              <th className={`${tableCellStyle} bg-dark-grey w-1/3`}>
-                Schemes
-              </th>
+              <th className={`${tableCellStyle} bg-dark-grey w-1/3`}>Schemes</th>
               <th className="w-[0px] p-0" />
             </tr>
           </thead>
           <tbody>
             {displayMembers.map((i, idx) => (
-              <tr
-                className=" hover:bg-light-gray hover:cursor-pointer"
-                key={idx}
-              >
-                <td
-                  className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
-                  onClick={() => handleNav(i.uuid)}
-                >
-                  {i.name}
+              <tr className="hover:bg-light-gray hover:cursor-pointer" key={idx}>
+                <td className={tableCellStyle}>
+                  {editState ? (
+                    <input
+                      type="text"
+                      value={i.name}
+                      onChange={(e) => handleChange(idx, "name", e.target.value)}
+                      className="border border-gray-300 p-1"
+                    />
+                  ) : (
+                    <span
+                      className="hover:underline hover:underline-offset-2"
+                      onClick={() => handleNav(i.uuid)}
+                    >
+                      {i.name}
+                    </span>
+                  )}
                 </td>
-                <td className={`${tableCellStyle}`}>{i.email}</td>
-                <td className={`${tableCellStyle}`}>{i.access_rights}</td>
-                <td className={`${tableCellStyle}`}>
+                <td className={tableCellStyle}>
+                  {editState ? (
+                    <input
+                      type="email"
+                      value={i.email}
+                      onChange={(e) => handleChange(idx, "email", e.target.value)}
+                      className="border border-gray-300 p-1"
+                    />
+                  ) : (
+                    i.email
+                  )}
+                </td>
+                <td className={tableCellStyle}>
+                  {editState ? (
+                    <input
+                      type="text"
+                      value={i.access_rights}
+                      onChange={(e) =>
+                        handleChange(idx, "access_rights", e.target.value)
+                      }
+                      className="border border-gray-300 p-1"
+                    />
+                  ) : (
+                    i.access_rights
+                  )}
+                </td>
+                <td className={tableCellStyle}>
                   <SchemeTags
                     schemes={i.schemes}
                     allSchemes={allSchemes}
@@ -207,15 +297,15 @@ function MyTeam({ teamMembers, allSchemes }) {
                     editState={editState}
                   />
                 </td>
-                <td>
-                  {editState ? (
+                <td> 
+                  {editState && (
                     <button className="flex items-center">
                       <FaRegTrashCan
-                        className=" text-red-500 ml-0.5"
+                        className="text-red-500 ml-0.5"
                         onClick={() => setDeleteId(i.uuid)}
                       />
                     </button>
-                  ) : null}
+                  )}
                 </td>
               </tr>
             ))}

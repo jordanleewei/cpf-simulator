@@ -6,6 +6,7 @@ export default function SchemeTags({
   user_id,
   updateTeamMembers,
   editState,
+  onChangeSchemes,
 }) {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState([...schemes].sort());
@@ -14,36 +15,19 @@ export default function SchemeTags({
     setChecked([...schemes].sort());
   }, [schemes]);
 
-  // update backend
-  useEffect(() => {
-    const updateSchemeBackend = async () => {
-      try {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme/${user_id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ user_id: user_id, schemesList: checked }),
-        });
-      } catch (e) {
-        console.log(e);
-      }
-    };
-
-    updateSchemeBackend();
-    updateTeamMembers();
-  }, [checked]);
-
-  const handleCheckboxChange = async (event) => {
+  const handleCheckboxChange = (event) => {
     const isChecked = event.target.checked;
     const schemeName = event.target.value;
 
-    // update state
+    let updatedChecked;
     if (isChecked) {
-      setChecked([...checked, schemeName].sort());
+      updatedChecked = [...checked, schemeName].sort();
     } else {
-      setChecked(checked.filter((name) => name !== schemeName));
+      updatedChecked = checked.filter((name) => name !== schemeName);
     }
+
+    setChecked(updatedChecked);
+    onChangeSchemes(updatedChecked);
   };
 
   const SchemeTag = ({ schemeName }) => {

@@ -134,6 +134,19 @@ function MyTeam({ teamMembers, allSchemes }) {
     );
   };
 
+  const handleSchemeChange = (index, updatedSchemes) => {
+    setAllTeamMembers((prevMembers) =>
+      prevMembers.map((member, idx) =>
+        idx === index ? { ...member, schemes: updatedSchemes } : member
+      )
+    );
+    setDisplayMembers((prevMembers) =>
+      prevMembers.map((member, idx) =>
+        idx === index ? { ...member, schemes: updatedSchemes } : member
+      )
+    );
+  };
+
   const handleSave = async () => {
     try {
       for (let i = 0; i < allTeamMembers.length; i++) {
@@ -142,18 +155,20 @@ function MyTeam({ teamMembers, allSchemes }) {
   
         // Log values for debugging
         console.log(`Comparing member ${member.uuid}:`);
-        console.log('Original:', originalMember);
         console.log('Current:', member);
-        
+        console.log('Original:', originalMember);
   
         // Check if there are any changes
         if (
           member.email !== originalMember.email ||
           member.name !== originalMember.name ||
-          member.access_rights !== originalMember.access_rights
+          member.access_rights !== originalMember.access_rights ||
+          JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes)
         ) {
           console.log(`Changes detected for member ${member.uuid}, updating...`);
-          const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${member.uuid}`, {
+          
+          // Update user details
+          const userRes = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -162,20 +177,34 @@ function MyTeam({ teamMembers, allSchemes }) {
               email: member.email,
               name: member.name,
               access_rights: member.access_rights,
+              schemes: member.schemes,
             }),
           });
   
-          if (!res.ok) {
-            throw new Error("Failed to update member");
+          if (!userRes.ok) {
+            throw new Error("Failed to update member details");
+          }
+
+          // Update schemes
+          const schemeRes = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme/${member.uuid}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ user_id: member.uuid, schemesList: member.schemes }),
+          });
+
+          if (!schemeRes.ok) {
+            throw new Error("Failed to update member schemes");
           }
         } else {
           console.log(`No changes for member ${member.uuid}, skipping update.`);
         }
       }
+      setOriginalTeamMembers(allTeamMembers); // Update original members to reflect saved changes
       setEditState(false); // Exit edit mode after successful save
-    } catch (e) {
-      console.log(e);
-      // Handle error (e.g., show error message to user)
+    } catch (error) {
+      console.error("Error saving changes:", error);
     }
   };
 
@@ -317,6 +346,9 @@ function MyTeam({ teamMembers, allSchemes }) {
                     user_id={i.uuid}
                     updateTeamMembers={updateTeamMembers}
                     editState={editState}
+                    onChangeSchemes={(updatedSchemes) =>
+                      handleSchemeChange(idx, updatedSchemes)
+                    }
                   />
                 </td>
                 <td> 

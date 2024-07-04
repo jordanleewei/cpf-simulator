@@ -6,7 +6,7 @@ from models.attempt import AttemptModel
 from models.scheme import SchemeModel
 from models.question import QuestionModel
 from models.association_tables import user_scheme_association
-from session import create_session, engine
+from session import create_session, engine, open_session
 from schemas.attempt import AttemptBase
 from schemas.user import UserBase, UserInput, UserResponseSchema
 from schemas.scheme import SchemeBase, SchemeInput
@@ -20,13 +20,14 @@ import shutil
 import uuid
 import os
 from dotenv import load_dotenv
-from boto3.session import Session as BotoSession
+# from boto3.session import Session
 import boto3
 from passlib.context import CryptContext
 
 load_dotenv()
 
 app = FastAPI()
+
 # Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
@@ -53,21 +54,32 @@ s3_client = boto3.client('s3')
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+def add_default_user(db: Session = Depends(create_session)):
+    default_email = os.getenv("DEFAULT_ADMIN_EMAIL")
+    default_password = os.getenv("DEFAULT_ADMIN_PASSWORD") 
+    default_name = os.getenv("DEFAULT_ADMIN_NAME") 
+    default_access_rights = os.getenv("DEFAULT_ADMIN_ACCESS_RIGHTS") 
+    
+    with open_session() as db:
+        db_user = db.query(UserModel).filter(UserModel.email == default_email).first()
+        if not db_user:
+            hashed_password = pwd_context.hash(default_password)
+            default_user = UserModel(
+                email=default_email,
+                hashed_password=hashed_password,
+                name=default_name,
+                access_rights=default_access_rights
+            )
+            db.add(default_user)
+            db.commit()
+            print("Default user added.")
+        else:
+            print("Default user already exists.")
+
+# Add the default user
+add_default_user()
 
 ### USER ROUTES ###
-
-# @app.post("/register", response_model=str, status_code=status.HTTP_201_CREATED)
-# async def create_user(user: UserBase, db: Session = Depends(create_session)):
-#     hashed_password = pwd_context.hash(user.password)  # Hash the password
-#     db_user = UserModel(
-#         email=user.email,
-#         hashed_password=hashed_password,
-#         name=user.name,
-#         access_rights=user.access_rights
-#     )
-#     db.add(db_user)
-#     db.commit()
-#     return db_user.uuid
 
 @app.post("/login", status_code=200)
 async def login_user(user_input: UserInput, db: Session = Depends(create_session)):

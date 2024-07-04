@@ -49,6 +49,7 @@ function MyTeam({ teamMembers, allSchemes }) {
   const [displayMembers, setDisplayMembers] = useState(teamMembers);
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
+  const [deleteQueue, setDeleteQueue] = useState([]);
   const accessRights = ["Trainee", "Admin"];
   
   // for filtering
@@ -88,28 +89,19 @@ function MyTeam({ teamMembers, allSchemes }) {
     setOriginalTeamMembers(teamMembers);
   };
 
-  async function handleDelete(user_id) {
-    try {
-      const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user_id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (res.ok) {
-        setAllTeamMembers(
-          allTeamMembers.filter((member) => member.uuid !== user_id)
-        );
-        setDisplayMembers(
-          displayMembers.filter((member) => member.uuid !== user_id)
-        );
-      }
-      // close modal
-      setDeleteId("");
-    } catch (e) {
-      console.log(e);
-    }
-  }
+  const handleDelete = (user_id) => {
+    // Queue the user_id for deletion
+    setDeleteQueue((prevQueue) => [...prevQueue, user_id]);
+    // Update frontend state immediately
+    setAllTeamMembers((prevMembers) =>
+      prevMembers.filter((member) => member.uuid !== user_id)
+    );
+    setDisplayMembers((prevMembers) =>
+      prevMembers.filter((member) => member.uuid !== user_id)
+    );
+    // Close modal
+    setDeleteId("");
+  };
 
   const handleNav = (id) => {
     router.push(`/${id}/profile`, undefined, { shallow: true });
@@ -119,6 +111,7 @@ function MyTeam({ teamMembers, allSchemes }) {
     setAllTeamMembers(originalTeamMembers);
     setDisplayMembers(originalTeamMembers);
     setEditState(false);
+    setDeleteQueue([]); // Reset delete queue
   };
 
   const handleChange = (index, field, value) => {
@@ -167,7 +160,7 @@ function MyTeam({ teamMembers, allSchemes }) {
         ) {
           console.log(`Changes detected for member ${member.uuid}, updating...`);
           
-          // Update user details
+          // Update user details - name | email | access rights
           const userRes = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${member.uuid}`, {
             method: "PUT",
             headers: {
@@ -197,12 +190,25 @@ function MyTeam({ teamMembers, allSchemes }) {
           if (!schemeRes.ok) {
             throw new Error("Failed to update member schemes");
           }
-        } else {
-          console.log(`No changes for member ${member.uuid}, skipping update.`);
         }
       }
-      setOriginalTeamMembers(allTeamMembers); // Update original members to reflect saved changes
-      setEditState(false); // Exit edit mode after successful save
+      // Update delete
+      for (const user_id of deleteQueue) {
+        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user_id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to delete user ${user_id}`);
+        }
+      }
+
+      setOriginalTeamMembers(allTeamMembers);
+      setEditState(false);
+      setDeleteQueue([]);
     } catch (error) {
       console.error("Error saving changes:", error);
     }

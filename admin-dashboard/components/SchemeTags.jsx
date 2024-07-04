@@ -34,6 +34,14 @@ export default function SchemeTags({
     return (
       <div className="flex justify-center items-center bg-light-blue px-2 py-1 rounded-lg text-dark-blue ">
         {schemeName}
+        {editState && (
+          <button
+            className="ml-2 text-red-500 hover:text-red-700"
+            onClick={() => handleCheckboxChange({ target: { checked: false, value: schemeName } })}
+          >
+            &times;
+          </button>
+        )}
       </div>
     );
   };
@@ -44,8 +52,7 @@ export default function SchemeTags({
         <SchemeTag key={idx} schemeName={name} />
       ))}
 
-      {/* Add new schemes */}
-      {editState ? (
+      {editState && (
         <div className="relative">
           <button
             className={`flex justify-center items-center bg-light-blue px-2 py-1 text-dark-blue rounded-t-lg ${
@@ -53,11 +60,11 @@ export default function SchemeTags({
             }`}
             onClick={() => setOpen(!open)}
           >
-            + Add Scheme
+             <span className="text-darker-green">+</span>&nbsp;Add Scheme
           </button>
-
-          {/* dropdown options */}
-          {open ? (
+          
+           {/* dropdown options */}
+          {open && (
             <div className="z-10 bg-light-blue absolute top-6 rounded-b-lg w-full p-2">
               <ul className="space-y-3">
                 {allSchemes.map((scheme) => (
@@ -69,14 +76,14 @@ export default function SchemeTags({
                       checked={checked.includes(scheme)}
                       onChange={handleCheckboxChange}
                     />
-                    <label>{scheme}</label>
+                    <label className="ml-2">{scheme}</label>
                   </li>
                 ))}
               </ul>
             </div>
-          ) : null}
+          )}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

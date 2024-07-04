@@ -7,8 +7,12 @@ import SchemeFilter from "../components/SchemeFilter";
 import SearchBar from "../components/SearchBar";
 import isAuth from "../components/isAuth";
 // icons
+import { AiFillCaretDown } from "react-icons/ai";
 import { FaRegTrashCan } from "react-icons/fa6";
 import DeleteModal from "../components/DeleteModal";
+// nextui components
+import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@nextui-org/react";
+
 
 export const getServerSideProps = async () => {
   // get all team members
@@ -45,6 +49,8 @@ function MyTeam({ teamMembers, allSchemes }) {
   const [displayMembers, setDisplayMembers] = useState(teamMembers);
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
+  const accessRights = ["Trainee", "Admin"];
+  
   // for filtering
   const [schemeFilter, setSchemeFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -136,8 +142,9 @@ function MyTeam({ teamMembers, allSchemes }) {
   
         // Log values for debugging
         console.log(`Comparing member ${member.uuid}:`);
-        console.log('Current:', member);
         console.log('Original:', originalMember);
+        console.log('Current:', member);
+        
   
         // Check if there are any changes
         if (
@@ -275,15 +282,30 @@ function MyTeam({ teamMembers, allSchemes }) {
                   )}
                 </td>
                 <td className={tableCellStyle}>
-                  {editState ? (
-                    <input
-                      type="text"
-                      value={i.access_rights}
-                      onChange={(e) =>
-                        handleChange(idx, "access_rights", e.target.value)
-                      }
-                      className="border border-gray-300 p-1"
-                    />
+                {editState ? (
+                  <div class="relative inline-block text-left">
+                    <Dropdown>
+                      <DropdownTrigger placement="bottom-end">
+                        <Button className="flex justify-between items-center w-full border border-gray-300 p-1">
+                          {i.access_rights} <AiFillCaretDown />
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        disallowEmptySelection
+                        aria-label="Select access right"
+                        selectionMode="single"
+                        selectedKeys={new Set([i.access_rights])}
+                        onSelectionChange={(keys) => handleChange(idx, "access_rights", keys.anchorKey)}
+                        className="w-full block bg-light-green "
+                      >
+                        {accessRights.map((right) => (
+                          <DropdownItem 
+                          className="hover:bg-lighter-green"
+                          key={right}>{right}</DropdownItem>
+                        ))}
+                      </DropdownMenu>
+                    </Dropdown>
+                    </div>
                   ) : (
                     i.access_rights
                   )}

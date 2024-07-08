@@ -7,9 +7,10 @@ import SchemeFilter from "../components/SchemeFilter";
 import SearchBar from "../components/SearchBar";
 import isAuth from "../components/isAuth";
 // icons
-import { AiFillCaretDown } from "react-icons/ai";
+import { AiFillCaretDown, AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { FaRegTrashCan } from "react-icons/fa6";
 import DeleteModal from "../components/DeleteModal";
+import { BiRefresh } from "react-icons/bi";
 // nextui components
 import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@nextui-org/react";
 
@@ -50,6 +51,9 @@ function MyTeam({ teamMembers, allSchemes }) {
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [deleteQueue, setDeleteQueue] = useState([]);
+  const [password, setPassword] = useState("");
+  const [resetPasswordIndex, setResetPasswordIndex] = useState(null);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const accessRights = ["Trainee", "Admin"];
   
   // for filtering
@@ -89,6 +93,30 @@ function MyTeam({ teamMembers, allSchemes }) {
     setOriginalTeamMembers(teamMembers);
   };
 
+  const handlePasswordReset = (index) => {
+    setResetPasswordIndex(index);
+  };
+
+  // Function to generate a random password
+  const generatePassword = () => {
+    const length = 15; // Set the length of the generated password
+    const charset =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}|<>?"; // Characters to include
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      result += charset[randomIndex];
+    }
+    return result;
+  };
+
+  // Function to handle generating a new password
+  const handleGeneratePassword = () => {
+    const newPassword = generatePassword();
+    setPassword(newPassword);
+    handleChange(resetPasswordIndex, "password", newPassword);
+  };
+
   const handleDelete = (user_id) => {
     // Queue the user_id for deletion
     setDeleteQueue((prevQueue) => [...prevQueue, user_id]);
@@ -112,6 +140,7 @@ function MyTeam({ teamMembers, allSchemes }) {
     setDisplayMembers(originalTeamMembers);
     setEditState(false);
     setDeleteQueue([]); // Reset delete queue
+    setResetPasswordIndex(null); // Reset password reset state
   };
 
   const handleChange = (index, field, value) => {
@@ -156,6 +185,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           member.email !== originalMember.email ||
           member.name !== originalMember.name ||
           member.access_rights !== originalMember.access_rights ||
+          member.password !== originalMember.password ||
           JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes)
         ) {
           console.log(`Changes detected for member ${member.uuid}, updating...`);
@@ -171,6 +201,7 @@ function MyTeam({ teamMembers, allSchemes }) {
               name: member.name,
               access_rights: member.access_rights,
               schemes: member.schemes,
+              password: member.password
             }),
           });
   
@@ -192,6 +223,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           }
         }
       }
+
       // Update delete
       for (const user_id of deleteQueue) {
         const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user_id}`, {
@@ -209,6 +241,7 @@ function MyTeam({ teamMembers, allSchemes }) {
       setOriginalTeamMembers(allTeamMembers);
       setEditState(false);
       setDeleteQueue([]);
+      setResetPasswordIndex(null);
     } catch (error) {
       console.error("Error saving changes:", error);
     }
@@ -279,6 +312,7 @@ function MyTeam({ teamMembers, allSchemes }) {
             <tr>
               <th className={`${tableCellStyle} bg-dark-grey`}>Name</th>
               <th className={`${tableCellStyle} bg-dark-grey`}>Email</th>
+              <th className={`${tableCellStyle} bg-dark-grey`}>Password</th>
               <th className={`${tableCellStyle} bg-dark-grey w-1/6`}>Access</th>
               <th className={`${tableCellStyle} bg-dark-grey w-1/3`}>Schemes</th>
               <th className="w-[0px] p-0" />
@@ -316,6 +350,46 @@ function MyTeam({ teamMembers, allSchemes }) {
                     i.email
                   )}
                 </td>
+                <td className={tableCellStyle}>
+                {editState && resetPasswordIndex === idx ? (
+                  <>
+                  <div className="flex items-center py-1 ml-2 w-full">
+                    <input
+                      type={isPasswordVisible ? "text" : "password"}
+                      value={i.password}
+                      onChange={(e) => handleChange(idx, "password", e.target.value)}
+                      className="border border-gray-300 p-1"
+                    />
+                    <div className="flex justify-center items-center">
+                      <Button
+                        isIconOnly
+                        className="ml-2"
+                        onClick={handleGeneratePassword}
+                        aria-label="Generate Password"
+                      >
+                        <BiRefresh />
+                      </Button>
+                      <Button
+                        isIconOnly
+                        className="ml-2"
+                        onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                      >
+                        {isPasswordVisible ? <AiFillEyeInvisible /> : <AiFillEye />}
+                      </Button>
+                    </div>
+                    </div>
+                  </>
+                ) : editState ? (
+                  <button
+                    className="text-white bg-dark-green hover:bg-darker-green px-2 rounded-md"
+                    onClick={() => handlePasswordReset(idx)}
+                  >
+                    Reset Password
+                  </button>
+                ) : (
+                  "•••••••••••••••"
+                )}
+              </td>
                 <td className={tableCellStyle}>
                 {editState ? (
                   <div class="relative inline-block text-left">

@@ -26,6 +26,27 @@ function AddQuestions() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
 
+  const defaultSystems = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/default-systems");
+      if (!res.ok) {
+        throw new Error("Failed to fetch default system names and urls");
+      }
+      const data = await res.json();
+      setIdealSystems([
+        { name: data.SYSTEM_1_NAME, url: data.SYSTEM_1_URL },
+        { name: data.SYSTEM_2_NAME, url: data.SYSTEM_2_URL },
+        { name: data.SYSTEM_3_NAME, url: data.SYSTEM_3_URL },
+      ]);
+    } catch (error) {
+      console.error("Error fetching default system names and urls:", error);
+    }
+  };
+
+  useEffect(() => {
+    defaultSystems();
+  }, []);
+
   useEffect(() => {
     if (router.isReady) {
       const scheme_name = router.query.slug;
@@ -100,7 +121,9 @@ function AddQuestions() {
     setDetails("");
     setIdeal("");
     setSelectedDifficulty(0);
-    setIdealSystems([{ name: "", url: "" }]);
+    setIdealSystems([
+      { name: "", url: "" }
+    ]);
     router.push(`/${scheme.toLowerCase()}/exercises`);
   }
 
@@ -186,7 +209,7 @@ function AddQuestions() {
                     key={index}
                     onAction={() => {
                       setSelectedDifficulty(index);
-                      setDropdownOpen(false); // Close the dropdown after selecting an option
+                      setDropdownOpen(false);
                       console.log("Selected option:", difficulty);
                     }}
                   >
@@ -232,77 +255,71 @@ function AddQuestions() {
             onChange={(e) => setIdeal(e.target.value)}
           ></textarea>
         </div>
-            {idealSystems.map((idealSystem, index) => (
-              <div key={index} className="flex justify-center w-5/6">
-                <div className="w-full ml-3">
-                <p className=" text-red-500 inline">*</p>Verified System Name:
-                  <textarea
-                    required={true}
-                    id={`ideal-system-name-${index}`}
-                    rows="1"
-                    className="block p-2.5 text-sm text-gray-900 text-wrap h-[50px] w-full
-                      bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
-                      focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
-                      dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    placeholder="Enter the verified system name"
-                    value={idealSystem.name}
-                    onChange={(e) => handleIdealSystemNameChange(index, e.target.value)}
-                    />
-                    </div>
-                    <div className="w-full ml-3">
-                    <p className=" text-red-500 inline">*</p>Verified System URL:
-                  <textarea
-                    required={true}
-                    id={`ideal-system-url-${index}`}
-                    rows="1"
-                    className="block p-2.5 text-sm text-gray-900 text-wrap h-[50px] w-full
-                      bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
-                      focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
-                      dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    placeholder="Enter the verified system URL"
-                    value={idealSystem.url}
-                    onChange={(e) => handleIdealSystemUrlChange(index, e.target.value)}
-                  />
-                  </div>
-                    {index === idealSystems.length - 1 && (
-                      <div className="relative">
-                      <div className="absolute flex items-center py-10 px-8">
-                        <button
-                        className="bg-light-green rounded-md p-1 mr-2"
-                        onClick={addIdealSystemRow}
-                      >
-                        <IoMdAdd />
-                      </button>
-                    {index !== 0 && (
-                      <button
-                        className="bg-red-500 rounded-md p-1"
-                        onClick={() => removeIdealSystemRow(index)}
-                      >
-                        <IoMdRemove />
-                      </button>
-                    )}
-                  </div>
-                  </div>
-            )}
+        {idealSystems.map((idealSystem, index) => (
+          <div key={index} className="flex justify-center w-5/6">
+            <div className="w-full ml-3">
+              <p className="text-red-500 inline">*</p>Verified System Name:
+              <textarea
+                required={true}
+                id={`ideal-system-name-${index}`}
+                rows="1"
+                className="block p-2.5 text-sm text-gray-900 text-wrap h-[50px] w-full
+                  bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
+                  focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
+                  dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Enter the verified system name"
+                value={idealSystem.name}
+                onChange={(e) => handleIdealSystemNameChange(index, e.target.value)}
+              />
+            </div>
+            <div className="w-full ml-3">
+              <p className="text-red-500 inline">*</p>Verified System URL:
+              <textarea
+                required={true}
+                id={`ideal-system-url-${index}`}
+                rows="1"
+                className="block p-2.5 text-sm text-gray-900 text-wrap h-[50px] w-full
+                  bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
+                  focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
+                  dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Enter the verified system URL"
+                value={idealSystem.url}
+                onChange={(e) => handleIdealSystemUrlChange(index, e.target.value)}
+              />
+            </div>
+            <div className="relative flex items-center py-10 px-8">
+              <button
+                className="bg-light-green rounded-md p-1 mr-2"
+                onClick={addIdealSystemRow}
+              >
+                <IoMdAdd />
+              </button>
+              <button
+                className="bg-red-500 rounded-md p-1"
+                onClick={() => removeIdealSystemRow(index)}
+              >
+                <IoMdRemove />
+              </button>
+            </div>
           </div>
         ))}
-        </div>
-
-        <div className="flex justify-center items-end">
-          <Button
-            className="bg-dark-green hover:bg-darker-green p-1 px-9 rounded-md text-white m-4"
-            onClick={handleCancel}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="bg-dark-green hover:bg-darker-green p-1 px-10 rounded-md text-white m-4"
-            onClick={handleSaveQuestion}
-          >
-            Save
-          </Button>
-        </div>
       </div>
+
+      <div className="flex justify-center items-end">
+        <Button
+          className="bg-dark-green hover:bg-darker-green p-1 px-9 rounded-md text-white m-4"
+          onClick={handleCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          className="bg-dark-green hover:bg-darker-green p-1 px-10 rounded-md text-white m-4"
+          onClick={handleSaveQuestion}
+        >
+          Save
+        </Button>
+      </div>
+    </div>
   );
 }
 

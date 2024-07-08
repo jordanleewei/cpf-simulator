@@ -54,6 +54,19 @@ s3_client = boto3.client('s3')
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Add default systems
+@app.get("/default-systems", status_code=200)
+def get_default_systems():
+    return responses.JSONResponse({
+        "SYSTEM_1_NAME": os.getenv("SYSTEM_1_NAME"),
+        "SYSTEM_1_URL": os.getenv("SYSTEM_1_URL"),
+        "SYSTEM_2_NAME": os.getenv("SYSTEM_2_NAME"),
+        "SYSTEM_2_URL": os.getenv("SYSTEM_2_URL"),
+        "SYSTEM_3_NAME": os.getenv("SYSTEM_3_NAME"),
+        "SYSTEM_3_URL": os.getenv("SYSTEM_3_URL"),
+    })
+
+# Add the default user
 def add_default_user(db: Session = Depends(create_session)):
     default_email = os.getenv("DEFAULT_ADMIN_EMAIL")
     default_password = os.getenv("DEFAULT_ADMIN_PASSWORD") 
@@ -76,7 +89,6 @@ def add_default_user(db: Session = Depends(create_session)):
         else:
             print("Default user already exists.")
 
-# Add the default user
 add_default_user()
 
 ### USER ROUTES ###

@@ -9,7 +9,9 @@ import DeleteModal from "../components/DeleteModal";
 function Schemes() {
   const [schemes, setSchemes] = useState([]);
   const [editState, setEditState] = useState(false);
+  const [deletedSchemes, setDeletedSchemes] = useState([]);
   const [deleteId, setDeleteId] = useState("");
+  const [originalSchemes, setOriginalSchemes] = useState([]);
 
   const router = useRouter();
 
@@ -26,6 +28,7 @@ function Schemes() {
         }));
 
         setSchemes(formattedSchemes);
+        setOriginalSchemes(formattedSchemes);
       } catch (e) {
         console.log(e);
       }
@@ -34,19 +37,39 @@ function Schemes() {
     getSchemes();
   }, []);
 
-  // Function to delete a scheme
-  const handleDelete = async (scheme_name) => {
+  // Function to delete a scheme from frontend only
+  const handleDelete = (schemeName) => {
+    const updatedSchemes = schemes.filter(
+      (scheme) => scheme.scheme_name !== schemeName
+    );
+    setSchemes(updatedSchemes);
+    setDeletedSchemes([...deletedSchemes, schemeName]);
+    setDeleteId(""); // 
+  };
+
+  // Function to cancel delete operation
+  const cancelDelete = () => {
+    setSchemes(originalSchemes);
+    setDeletedSchemes([]);
+    setDeleteId(""); 
+    setEditState(false);
+  };
+
+  // Function to save deleted schemes to the backend
+  const handleSave = async () => {
     try {
-      const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme/${scheme_name}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        // Filter out the deleted scheme from state
-        setSchemes(schemes.filter((scheme) => scheme.scheme_name !== scheme_name));
-        setDeleteId(""); // Reset deleteId state after successful deletion
-      } else {
-        console.error("Failed to delete scheme");
+      // Delete schemes from the backend
+      for (const schemeName of deletedSchemes) {
+        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme/${schemeName}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          console.error(`Failed to delete scheme ${schemeName}`);
+        }
       }
+      setDeletedSchemes([]);
+      setDeleteId("");
+      setEditState(false);
     } catch (error) {
       console.error("Error deleting scheme:", error);
     }
@@ -71,7 +94,13 @@ function Schemes() {
                   </button>
                   <button
                     className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                    onClick={() => setEditState(false)}
+                    onClick={handleSave}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                    onClick= {cancelDelete}
                   >
                     Cancel
                   </button>
@@ -101,6 +130,8 @@ function Schemes() {
                   schemes={schemes}
                   setSchemes={setSchemes}
                   setDeleteId={setDeleteId}
+                  isDeleted={deletedSchemes.includes(scheme.scheme_name)}
+                  handleDelete={() => handleDelete(scheme.scheme_name)}
                 />
               ))
             ) : (

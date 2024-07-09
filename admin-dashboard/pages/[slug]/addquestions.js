@@ -28,7 +28,7 @@ function AddQuestions() {
 
   const defaultSystems = async () => {
     try {
-      const res = await fetch("http://localhost:8000/default-systems");
+      const res = await fetch("https://d17ygk7qno65io.cloudfront.net/default-systems");
       if (!res.ok) {
         throw new Error("Failed to fetch default system names and urls");
       }

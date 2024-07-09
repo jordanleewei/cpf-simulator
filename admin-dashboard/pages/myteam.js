@@ -307,7 +307,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           )}
         </div>
 
-        <table className="w-full table-fixed border border-collapse border-slate-200 mt-2">
+        <table className="w-full table-auto border border-collapse border-slate-200 mt-2">
           <thead>
             <tr>
               <th className={`${tableCellStyle} bg-dark-grey`}>Name</th>

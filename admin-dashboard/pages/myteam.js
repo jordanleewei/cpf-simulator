@@ -43,6 +43,7 @@ function MyTeam({ teamMembers, allSchemes }) {
 
   // styles
   const tableCellStyle = `text-start py-2 px-3 border`;
+  const scrollableCellStyle = `text-start py-2 px-3 border max-w-[300px] overflow-x-auto`;
 
   // states
   const [allTeamMembers, setAllTeamMembers] = useState(teamMembers);
@@ -310,8 +311,8 @@ function MyTeam({ teamMembers, allSchemes }) {
         <table className="w-full table-auto border border-collapse border-slate-200 mt-2">
           <thead>
             <tr>
-              <th className={`${tableCellStyle} bg-dark-grey`}>Name</th>
-              <th className={`${tableCellStyle} bg-dark-grey`}>Email</th>
+              <th className={`${scrollableCellStyle} bg-dark-grey`}>Name</th>
+              <th className={`${scrollableCellStyle} bg-dark-grey`}>Email</th>
               <th className={`${tableCellStyle} bg-dark-grey`}>Password</th>
               <th className={`${tableCellStyle} bg-dark-grey w-1/6`}>Access</th>
               <th className={`${tableCellStyle} bg-dark-grey w-1/3`}>Schemes</th>
@@ -321,7 +322,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           <tbody>
             {displayMembers.map((i, idx) => (
               <tr className="hover:bg-light-gray hover:cursor-pointer" key={idx}>
-                <td className={tableCellStyle}>
+                <td className={scrollableCellStyle}>
                   {editState ? (
                     <input
                       type="text"
@@ -338,7 +339,7 @@ function MyTeam({ teamMembers, allSchemes }) {
                     </span>
                   )}
                 </td>
-                <td className={tableCellStyle}>
+                <td className={scrollableCellStyle}>
                   {editState ? (
                     <input
                       type="email"

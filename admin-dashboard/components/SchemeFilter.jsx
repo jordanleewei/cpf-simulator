@@ -14,12 +14,18 @@ export default function SchemeFilter({
     setOpen(false);
   };
 
+  // Calculate maximum width based on the longest scheme name
+  const maxSchemeWidth = Math.max(
+    ...allSchemes.map((scheme) => scheme.length)
+  );
+
   return (
     <div className="relative">
       <button
-        className={`flex flex-row items-center justify-between bg-light-gray w-32 rounded-md py-1 px-3 ${
+        className={`flex flex-row items-center justify-between bg-light-gray rounded-md py-1 px-3 hover:bg-gray-200 ${
           open ? "rounded-b-none" : "rounded-b-lg"
         }`}
+        style={{ width: `${maxSchemeWidth * 8}px` }} 
         onClick={() => setOpen(!open)}
       >
         <div>{schemeFilter}</div>
@@ -33,7 +39,7 @@ export default function SchemeFilter({
             <li className="flex items-center w-full gap-2">
               <button
                 value="All"
-                className="w-4 h-4"
+                className="w-full h-auto text-left hover:bg-gray-200 rounded"
                 onClick={handleCheckboxChange}
               >
                 All
@@ -43,7 +49,7 @@ export default function SchemeFilter({
               <li key={scheme} className="flex items-center w-full gap-2">
                 <button
                   value={scheme}
-                  className="w-4 h-4"
+                  className="w-full h-auto text-left hover:bg-gray-200 rounded"
                   onClick={handleCheckboxChange}
                 >
                   {scheme}

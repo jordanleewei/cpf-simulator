@@ -30,14 +30,22 @@ export default function SchemeTags({
     onChangeSchemes(updatedChecked);
   };
 
+  const maxSchemeWidth = Math.max(
+    ...allSchemes.map((scheme) => scheme.length)
+  );
+
   const SchemeTag = ({ schemeName }) => {
     return (
-      <div className="flex justify-center items-center bg-light-blue px-2 py-1 rounded-lg text-dark-blue ">
+      <div className="flex justify-center items-center bg-light-blue px-2 py-1 rounded-lg text-dark-blue scheme-tag">
         {schemeName}
         {editState && (
           <button
             className="ml-2 text-red-500 hover:text-red-700"
-            onClick={() => handleCheckboxChange({ target: { checked: false, value: schemeName } })}
+            onClick={() =>
+              handleCheckboxChange({
+                target: { checked: false, value: schemeName },
+              })
+            }
           >
             &times;
           </button>
@@ -60,23 +68,27 @@ export default function SchemeTags({
             }`}
             onClick={() => setOpen(!open)}
           >
-             <span className="text-darker-green">+</span>&nbsp;Add Scheme
+            <span className="text-darker-green">+</span>&nbsp;Add Scheme
           </button>
-          
-           {/* dropdown options */}
+
+          {/* dropdown options */}
           {open && (
-            <div className="z-10 bg-light-blue absolute top-6 rounded-b-lg w-full p-2">
+            <div className="z-10 bg-light-blue absolute top-full left-0 p-2 rounded-b-lg dropdown">
               <ul className="space-y-3">
                 {allSchemes.map((scheme) => (
-                  <li key={scheme} className="flex items-center w-full gap-2">
+                  <li
+                    key={scheme}
+                    className="flex items-center w-full gap-2"
+                  >
                     <input
                       type="checkbox"
                       value={scheme}
-                      className="w-4 h-4"
+                      style={{ width: "13px", height: "13px", cursor: "pointer" }}
                       checked={checked.includes(scheme)}
                       onChange={handleCheckboxChange}
                     />
-                    <label className="ml-2">{scheme}</label>
+                    <label 
+                    className="ml-2">{scheme}</label>
                   </li>
                 ))}
               </ul>

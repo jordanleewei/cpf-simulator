@@ -22,10 +22,9 @@ export default function SchemeFilter({
   return (
     <div className="relative">
       <button
-        className={`flex flex-row items-center justify-between bg-light-gray rounded-md py-1 px-3 hover:bg-gray-200 ${
+        className={`flex flex-row items-center justify-between bg-light-gray w-32 rounded-md py-1 px-3 hover:bg-gray-200 ${
           open ? "rounded-b-none" : "rounded-b-lg"
         }`}
-        style={{ width: `${maxSchemeWidth * 8}px` }} 
         onClick={() => setOpen(!open)}
       >
         <div>{schemeFilter}</div>
@@ -34,7 +33,7 @@ export default function SchemeFilter({
         </div>
       </button>
       {open ? (
-        <div className="z-10 bg-light-gray absolute top-6 rounded-b-lg w-full p-4">
+        <div className="z-10 bg-light-gray absolute top-full rounded-b-lg p-4 overflow-y-visible">
           <ul className="space-y-3">
             <li className="flex items-center w-full gap-2">
               <button

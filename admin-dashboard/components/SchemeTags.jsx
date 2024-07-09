@@ -63,7 +63,7 @@ export default function SchemeTags({
       {editState && (
         <div className="relative">
           <button
-            className={`flex justify-center items-center bg-light-blue px-2 py-1 text-dark-blue rounded-t-lg ${
+            className={`flex justify-center items-center bg-light-blue px-2 py-1 text-dark-blue rounded-t-lg hover:bg-lighter-blue ${
               open ? "rounded-b-none" : "rounded-b-lg"
             }`}
             onClick={() => setOpen(!open)}

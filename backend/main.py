@@ -152,9 +152,10 @@ async def update_user(user_id: str, user: UserBase, db: Session = Depends(create
     db_user.email = user.email
     db_user.name = user.name
     db_user.access_rights = user.access_rights
+    # db_user.hashed_password = user.password
     
-    # if user.password:  # If password is provided, update it
-    #     db_user.hashed_password = pwd_context.hash(user.password)
+    if user.password:  # If password is provided, update it
+        db_user.hashed_password = pwd_context.hash(user.password)
 
     db.commit()
     db.refresh(db_user)

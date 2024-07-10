@@ -3,7 +3,7 @@ export default function Footer() {
   const scheme_names = ["Retirement", "Housing", "Medisave"];
 
   return (
-    <div className="bg-dark-green text-white w-screen h-1/5 text-xs flex flex-row justify-between px-16 py-5">
+    <div className="bg-dark-green text-white w-full text-xs flex flex-row justify-between items-center px-16 py-5 bottom-0 left-0">
       <div>CCU’s Training Simulator</div>
     </div>
   );

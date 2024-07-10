@@ -39,11 +39,9 @@ function Question() {
     : [];
 
   return (
-    <>
-      <div className="bg-light-green p-4">
+    <div className="exercise-container">
         <BackBar review={false} submit={false} profile={false} />
-        <div className="bg-light-gray rounded-md p-6 m-5 ">
-          <div className="border-4 border-solid border-dark-green rounded-lg p-8 h-max-content flex items-start justify-center text-black mt-30 flex-col ml-20 mr-20 mb-5 gap-4">
+        <div className="exercise-card">
             <div className="font-bold text-2xl">{question.title}</div>
             <div>
               <div>
@@ -83,8 +81,6 @@ function Question() {
             </div>
           </div>
         </div>
-      </div>
-    </>
   );
 }
 

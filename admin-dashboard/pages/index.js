@@ -5,7 +5,7 @@ import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 export default function Login({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State for password visibility
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [notification, setNotification] = useState("");
 
   const router = useRouter();
@@ -47,13 +47,9 @@ export default function Login({ setUser }) {
   }
 
   return (
-    <div>
-      <div className="flex justify-center my-8 text-base">
-        <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 flex flex-col md:max-w-lg lg:max-w-xl">
-          <form
-            onSubmit={onSubmit}
-            className="flex justify-start flex-col w-full"
-          >
+      <div className="login-component">
+        <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 md:max-w-lg lg:max-w-xl">
+          <form onSubmit={onSubmit} className="flex justify-start flex-col w-full">
             <h1 className="flex pb-5 sm:text-2xl md:text-3xl font-bold">
               Admin Module
             </h1>
@@ -95,6 +91,5 @@ export default function Login({ setUser }) {
           </form>
         </div>
       </div>
-    </div>
   );
 }

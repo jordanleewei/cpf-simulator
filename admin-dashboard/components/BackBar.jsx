@@ -10,7 +10,7 @@ export default function BackBar({}) {
 
   return (
     <>
-      <div className="flex justify-start items-center w-full overflow-hidden">
+      <div className="items-start p-3">
         <button className="button-btm" onClick={handleBack}>
           <div className="hover:text-gray-600 flex flex-row">
             <ChevronLeft style={{ verticalAlign: "middle" }} />

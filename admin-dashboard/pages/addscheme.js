@@ -91,8 +91,8 @@ function AddScheme() {
   };
 
   return (
-    <div className="flex flex-col p-4">
-      <div className="flex flex-row">
+    <div className="add-scheme-container">
+      <div className="items-start p-3">
         <Button
           startContent={<IoIosArrowBack />}
           className="flex items-center m-1 mx-3"
@@ -101,7 +101,7 @@ function AddScheme() {
           Back
         </Button>
       </div>
-
+    <div className="add-scheme-card">
       <div className="w-1/2 flex flex-col justify-center items-center gap-4 place-self-center py-2 px-4">
         <span className="text-2xl font-bold my-3 place-self-start">
           Add Scheme
@@ -144,6 +144,7 @@ function AddScheme() {
           </Button>
         </div>
       </div>
+    </div>
     </div>
   );
 }

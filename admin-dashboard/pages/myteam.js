@@ -249,7 +249,7 @@ function MyTeam({ teamMembers, allSchemes }) {
   };
 
   return (
-    <div className="w-screen bg-light-green flex items-center justify-center p-4 relative">
+    <div className="profile-card">
       {deleteId && (
         <div className="w-full h-full flex justify-center items-center fixed -top-0.5 z-40">
           <DeleteModal

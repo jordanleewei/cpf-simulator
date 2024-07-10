@@ -89,9 +89,9 @@ function AddProfile() {
   };
 
   return (
-    <div className="flex flex-col p-4">
+    <div className="add-profile-container">
       {/* Back button */}
-      <div className="flex flex-row">
+      <div className="items-start p-3">
         <Button
           startContent={<IoIosArrowBack />}
           className="flex items-center m-1 mx-3"
@@ -102,11 +102,12 @@ function AddProfile() {
       </div>
 
       {/* Actual page content */}
-      <div className="w-1/2 flex flex-col justify-center items-center gap-4 place-self-center py-2 px-4">
+      <div className="add-profile-card">
+      <div className="flex flex-col justify-center items-center gap-4 place-self-center py-2 px-4">
         <span className="text-2xl font-bold m-3 place-self-start">
           Add Profile
         </span>
-
+        <div className="flex flex-col justify-between	items-center gap-4 place-self-center py-2 px-4">
         {/* Name input */}
         <div className="flex flex-row justify-center items-center">
           <span className="flex w-1/4">
@@ -137,7 +138,7 @@ function AddProfile() {
         </div>
 
         {/* Password input */}
-        <div className="flex flex-row justify-center items-center pl-7">
+        <div className="flex flex-row justify-center items-center pl-6">
           <span className="flex w-1/4">
             <p className="text-red-500">*</p>Password:
           </span>
@@ -174,11 +175,12 @@ function AddProfile() {
         {/* Access rights dropdown */}
         <ButtonGroup
           variant="flat"
-          className="flex flex-row md:flex-nowrap flex-wrap items-center"
+          className="flex flex-row items-center"
         >
-          <span className="flex w-1/4">
+          <span className="flex w-1/4 pr-2">
             <p className="text-red-500">*</p>Access:{" "}
           </span>
+          <div className="pr-1"> 
           <div className="flex border border-sage-green p-1 w-48 justify-between">
             <span className="flex w-1/4">
               {accessRights[selectedAccessIndex]}
@@ -209,8 +211,9 @@ function AddProfile() {
               </DropdownMenu>
             </Dropdown>
           </div>
+          </div>
         </ButtonGroup>
-
+        </div>
         {/* Buttons for cancel and save */}
         <div className="flex justify-center items-end">
           <Button
@@ -226,6 +229,7 @@ function AddProfile() {
             Save
           </Button>
         </div>
+      </div>
       </div>
     </div>
   );

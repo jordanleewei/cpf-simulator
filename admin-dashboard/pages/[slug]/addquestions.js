@@ -150,8 +150,8 @@ function AddQuestions() {
   }
 
   return (
-    <div className="flex flex-col p-4">
-      <div className="flex flex-row">
+    <div className="add-question-container">
+      <div className="items-start p-3">
         <Button
           startContent={<IoIosArrowBack />}
           className="flex items-center m-1 mx-3"
@@ -162,6 +162,7 @@ function AddQuestions() {
       </div>
 
       {/* Actual page content */}
+      <div className="add-question-card">
       <div className="w-3/4 flex flex-col justify-center items-center gap-4 place-self-center py-2 px-4">
         <span className="text-2xl font-bold m-3 place-self-start">
           Add Question to {scheme} Scheme
@@ -184,7 +185,7 @@ function AddQuestions() {
           variant="flat"
           className="flex flex-row md:flex-nowrap items-center gap-3 pl-9"
         >
-          <span className="flex w-1/4">
+          <span className="flex">
             <p className=" text-red-500">*</p>Difficulty:{" "}
           </span>
           <div className="flex border border-sage-green p-1 w-48 justify-between ">
@@ -238,7 +239,7 @@ function AddQuestions() {
           ></textarea>
         </div>
 
-        <div className="flex flex-row md:flex-nowrap flex-wrap gap-0.5 px-1 m-2 w-full justify-center">
+        <div className="flex flex-row md:flex-nowrap gap-0.5 px-1 m-2 w-full justify-center">
           <span className="flex items-start text-wrap ml-2 w-20">
             <p className=" text-red-500">*</p>Ideal Answer:
           </span>
@@ -247,10 +248,10 @@ function AddQuestions() {
             required={true}
             id="ideal-answer"
             rows="4"
-            className="block p-2.5 text-sm text-gray-900 text-wrap h-[200px] w-[185px] md:w-[600px]
-                 bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
-                 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
-                 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            className="block p-2.5  ml-5 text-sm text-gray-900 text-wrap h-[200px] w-[185px] md:w-[600px]
+                        bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
+                        focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
+                        dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="Enter your ideal answer"
             onChange={(e) => setIdeal(e.target.value)}
           ></textarea>
@@ -303,7 +304,7 @@ function AddQuestions() {
             </div>
           </div>
         ))}
-      </div>
+      
 
       <div className="flex justify-center items-end">
         <Button
@@ -318,7 +319,9 @@ function AddQuestions() {
         >
           Save
         </Button>
+        </div>
       </div>
+    </div>
     </div>
   );
 }

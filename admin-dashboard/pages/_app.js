@@ -18,12 +18,6 @@ export default function App({ Component, pageProps }) {
       let inactivityTimeout;
       const inactivityThreshold = 3600000; // 1 hour in milliseconds
 
-      // Function to handle user activity
-      const handleActivity = () => {
-        clearTimeout(inactivityTimeout);
-        inactivityTimeout = setTimeout(logoutUser, inactivityThreshold);
-      };
-
       const logoutUser = () => {
         window.localStorage.removeItem("loggedUser");
         setUser("");
@@ -31,8 +25,10 @@ export default function App({ Component, pageProps }) {
         router.push("/");
       };
 
-      const handleUnload = () => {
-        logoutUser();
+      // Function to handle user activity
+      const handleActivity = () => {
+        clearTimeout(inactivityTimeout);
+        inactivityTimeout = setTimeout(logoutUser, inactivityThreshold);
       };
 
       // Event listeners to detect user activity
@@ -40,6 +36,9 @@ export default function App({ Component, pageProps }) {
       events.forEach(event => {
         window.addEventListener(event, handleActivity);
       });
+
+      const handleUnload = (event) => {
+      };
 
       window.addEventListener('beforeunload', handleUnload);
 
@@ -56,10 +55,10 @@ export default function App({ Component, pageProps }) {
   }, [router]);
 
   return (
-    <div className="overflow-y-scroll overflow-x-clip scrollbar-hide">
-      <Header user={user} setUser={setUser} />
-      <Component {...pageProps} setUser={setUser} />
-      <Footer />
+    <div className="login-container">
+      <div className="header"><Header user={user} setUser={setUser} /></div>
+      <div className="page-component"><Component {...pageProps} setUser={setUser} /></div>
+      <div className="footer"><Footer /></div>
     </div>
   );
 }

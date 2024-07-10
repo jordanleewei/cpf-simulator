@@ -44,12 +44,11 @@ export default function Login({ setUser }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="flex justify-center my-8 text-base">
-        <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 flex flex-col md:max-w-lg lg:max-w-xl">
-          <form onSubmit={onSubmit} className="flex justify-start flex-col w-full">
+    <div className="login-component">
+        <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 md:max-w-lg lg:max-w-xl">
+          <form onSubmit={onSubmit} className="flex justify-center flex-col w-full">
             <h1 className="flex pb-5 sm:text-2xl md:text-3xl font-bold">
-              Login
+            Trainee – Login
             </h1>
             <div className="icon-input pt-2">
               <input
@@ -93,6 +92,5 @@ export default function Login({ setUser }) {
           </form>
         </div>
       </div>
-    </div>
   );
 }

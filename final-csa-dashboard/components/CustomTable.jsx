@@ -47,7 +47,7 @@ export default function TableCustomized({ rows }) {
   }
 
   return (
-    <Root sx={{ maxWidth: "100%", width: "100%" }}>
+    <Root sx={{ maxWidth: "100%", width: "100%", }}>
       <table aria-label="custom pagination table">
         <thead>
           <tr>
@@ -68,10 +68,10 @@ export default function TableCustomized({ rows }) {
               <td align="right">{row.date}</td>
               <td
                 align="right"
-                className="hover:underline hover:underline-offset-2"
+                className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
                 onClick={() => handleReviewNav(row.attempt_id)}
               >
-                Review
+                Click to view attempt
               </td>
             </tr>
           ))}

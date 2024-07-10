@@ -102,12 +102,12 @@ export default function AverageScores({ user }) {
 
             {/* dropdown options */}
             {open ? (
-              <div className="z-10 bg-dark-grey absolute top-6 rounded-b-lg w-full px-1 py-2">
+              <div className="z-10 bg-dark-grey absolute top-6 rounded-b-lg w-full px-1 py-2 ">
                 <ul className="space-y-1">
                   {averageScores.map((scores) => (
                     <li
                       key={scores.scheme_name}
-                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 ${
+                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 hover:cursor-pointer hover:bg-light-gray ${
                         pieSelect == scores.scheme_name
                           ? "bg-light-gray"
                           : "bg-dark-grey"

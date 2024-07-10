@@ -1,6 +1,8 @@
 // framework
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import Link from 'next/link';
+
 // icons and images
 import landingpage from "../public/landingpage.png";
 import feedbackpage from "../public/feedbackpage.png";
@@ -29,9 +31,9 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-base">
+    <div className="text-base pb-10">
       {/* Intro Page */}
-      <div className="w-screen h-auto flex flex-row items-center justify-center pl-20 gap-8 py-10 bg-light-green">
+      <div className="flex flex-row items-center justify-center pl-20 gap-8 py-10 bg-light-green">
         <div className=" w-2/5 flex flex-col gap-8">
           <div className="font-bold text-3xl">
             Start training with CPF simulator
@@ -40,10 +42,12 @@ export default function Home() {
           We are excited to introduce a new training simulator powered by GenAI, designed to enhance the proficiency of CCU officers in handling written enquiries.
           </div>
           <div>
+          <Link href="/login">
             <button className="bg-dark-green hover:bg-darker-green text-white py-3 px-8 rounded-lg">
               Let's Start
             </button>
-          </div>
+          </Link>
+        </div>
         </div>
         <div className="drop-shadow-2xl">
           <Image
@@ -109,12 +113,15 @@ export default function Home() {
             </div>
           </div>
           <div className="flex justify-center">
+           <Link href="/login">
             <button className="py-2 px-16 border-2 border-dark-green bg-dark-green rounded-lg hover:bg-darker-green text-white">
               Log in to start!
             </button>
+            </Link>
           </div>
         </div>
       </div>
+      
     </div>
   );
 }

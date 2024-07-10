@@ -104,7 +104,7 @@ function Question({ user }) {
 
   return (
     <>
-      <div className="bg-light-green p-4">
+      <div className="bg-light-green p-4 scheme-card">
         <QuestionBar
           review={false}
           submit={false}

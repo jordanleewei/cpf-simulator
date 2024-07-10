@@ -36,7 +36,7 @@ function Schemes({ user }) {
         <div className="w-screen h-auto flex flex-row justify-between items-center px-20 pt-10 pb-10 text-black">
           <div className="font-bold text-3xl">Schemes Overview</div>
         </div>
-        <div className="flex flex-col gap-y-5 min-h-screen">
+        <div className="flex flex-col gap-y-5">
           <div className="flex flex-row flex-wrap px-20 justify-around gap-y-7 mb-8">
             {schemes.length > 0 ? (
               schemes.map((scheme) => (

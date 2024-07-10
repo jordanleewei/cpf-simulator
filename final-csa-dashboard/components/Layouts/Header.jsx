@@ -22,7 +22,7 @@ export default function Header({ user, setUser }) {
   };
 
   return (
-    <div className="bg-dark-green text-white w-screen h-max-10 text-xs flex flex-row justify-between px-10 py-3">
+    <div className="bg-dark-green text-white h-max-10 text-xs flex flex-row justify-between px-10 py-3">
       <div className="flex flex-row items-center">
         <Image height={60} src={cpfImage} alt="CPF logo" />
         <div className=" text-x">

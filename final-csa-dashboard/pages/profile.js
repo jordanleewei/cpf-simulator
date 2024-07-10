@@ -116,12 +116,12 @@ function Profile({ user }) {
   };
 
   return (
-    <div className="bg-light-green p-4">
+    <div className="bg-light-green p-4 profile-card">
       <div className="font-bold text-xl pl-2">Welcome, {userName}</div>
-      <AverageScores className="mt-2" user={user} />
+      <AverageScores className="mt-2 " user={user} />
 
-      <div className="h-max-content flex flex-row items-start">
-        <div className="bg-light-gray rounded-lg w-1/3 mt-4 mr-4 py-5">
+      <div className="flex flex-row items-start">
+        <div className="bg-light-gray rounded-lg w-1/3 mt-4 mr-4 py-5 pb-48">
           <h3 className="pl-5 font-bold">Scheme Mastery</h3>
           <div className="rounded-lg p-5 w-full h-full flex flex-col justify-center items-center gap-5">
             {subCat.length === 0 ? (
@@ -138,8 +138,8 @@ function Profile({ user }) {
             )}
           </div>
         </div>
-        <div className="bg-light-gray rounded-lg w-2/3 mt-4 relative">
-          <h3 className="pl-5 pt-5 font-bold">Practice Details</h3>
+        <div className="bg-light-gray rounded-lg w-2/3 mt-4  py-5 pb-36">
+          <h3 className="pl-5 font-bold">Practice Details</h3>
           {attempts.length > 0 ? (
             <div className="rounded-lg py-4 px-4 h-full flex items-center relative">
               <CustomTable rows={attempts} />
@@ -160,6 +160,7 @@ function Profile({ user }) {
         </div>
       </div>
     </div>
+    
   );
 }
 

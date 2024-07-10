@@ -90,7 +90,7 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
         memory=memory
     )
 
-    # Function to check similarity
+    # Check similarity
     def are_source_names_correct(trainee_names, ideal_names):
         similarity_threshold = 70 
         missing_names = []
@@ -118,13 +118,7 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
     # Check if source names are correct
     trainee_names = system_name.split(", ")
     ideal_names = ideal_system_name.split(", ")
-
-    print(trainee_names)
-    print(ideal_names)
-    
     is_correct, missing_names = are_source_names_correct(trainee_names, ideal_names)
-    print(is_correct)
-    print(missing_names)
     
     # Determine feedback based on correctness
     if is_correct:

@@ -139,7 +139,6 @@ async def read_user(user_id:str, db: Session = Depends(create_session)):
         "email": db_user.email,
         "name": db_user.name,
         "access_rights": db_user.access_rights
-        # Exclude hashed_password from the response
     }
     return user_data
 
@@ -152,9 +151,8 @@ async def update_user(user_id: str, user: UserBase, db: Session = Depends(create
     db_user.email = user.email
     db_user.name = user.name
     db_user.access_rights = user.access_rights
-    # db_user.hashed_password = user.password
     
-    if user.password:  # If password is provided, update it
+    if user.password:  
         db_user.hashed_password = pwd_context.hash(user.password)
 
     db.commit()
@@ -184,7 +182,7 @@ async def delete_user(user_id: str, db: Session = Depends(create_session)):
 
 @app.post("/user", status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserBase, db: Session = Depends(create_session)):
-    hashed_password = pwd_context.hash(user.password)  # Hash the password
+    hashed_password = pwd_context.hash(user.password)  
     db_user = UserModel(
         email=user.email,
         hashed_password=hashed_password,
@@ -267,37 +265,6 @@ async def get_scheme_by_user_id(user_id: str, db: Session = Depends(create_sessi
 
     return scheme_list
 
-# # async def save_image_locally(file):
-# #     unique_str = str(uuid.uuid4())[:5]
-# #     filename, file_extension = os.path.splitext(file.filename)
-# #     file.filename = f"{filename}_{unique_str}{file_extension}"
-    
-#     # Save file for admin dashboard
-#     admin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../admin-dashboard/public"))
-#     admin_upload_path = os.path.join(admin_path, "uploads")
-#     os.makedirs(admin_upload_path, exist_ok=True)
-#     admin_file_path = os.path.join(admin_upload_path, file.filename)
-
-#     with open(admin_file_path, "wb") as f_admin:
-#         file.file.seek(0)  # Reset file pointer to start of the file
-#         shutil.copyfileobj(file.file, f_admin)
-        
-#     # Save file for final-csa-dashboard
-#     csa_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../final-csa-dashboard/public"))
-#     csa_upload_path = os.path.join(csa_path, "uploads")  
-#     os.makedirs(csa_upload_path, exist_ok=True)
-#     csa_file_path = os.path.join(csa_upload_path, file.filename)  
-
-#     with open(csa_file_path, "wb") as f_csa:
-#         file.file.seek(0)  
-#         shutil.copyfileobj(file.file, f_csa)
-    
-#     # Get the relative path of the saved files
-#     rel_admin_path = os.path.relpath(admin_file_path, admin_path)
-#     rel_csa_path = os.path.relpath(csa_file_path, csa_path)
-    
-#     return rel_admin_path, rel_csa_path
-
 @app.post("/scheme/{user_id}", status_code=status.HTTP_201_CREATED)
 async def add_user_to_scheme(scheme: SchemeBase, db: Session = Depends(create_session)):
     user = db.query(UserModel).filter(UserModel.uuid == scheme.user_id).first()
@@ -321,9 +288,6 @@ async def add_user_to_scheme(scheme: SchemeBase, db: Session = Depends(create_se
 
 @app.post('/scheme', status_code=status.HTTP_201_CREATED)
 async def add_new_scheme(scheme_name: str, file_url: str, db: Session = Depends(create_session)):
-    # if not file:
-    #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No file provided")
-    
     # Standardize the scheme name
     scheme_name = scheme_name[0].upper() + scheme_name[1:].lower()
     
@@ -333,19 +297,11 @@ async def add_new_scheme(scheme_name: str, file_url: str, db: Session = Depends(
         return {"message": "This is an existing scheme"}
 
     try:
-    #     # Upload file to S3
-    #     s3_client.upload_fileobj(file.file, BUCKET_NAME, file.filename)
-
-    #     # Construct the S3 URL
-    #     s3_file_url = f"https://{BUCKET_NAME}.s3.{AWS_REGION_NAME}.amazonaws.com/{file.filename}"
-
-    #     print("s3_file_url",s3_file_url)
-
         # Save scheme details to the database
         new_scheme = SchemeModel(
             scheme_name=scheme_name,
             scheme_csa_img_path=file_url,
-            scheme_admin_img_path=file_url  # Assuming admin and CSA images are the same for simplicity
+            scheme_admin_img_path=file_url  
         )
         db.add(new_scheme)
         db.commit()
@@ -359,24 +315,6 @@ async def add_new_scheme(scheme_name: str, file_url: str, db: Session = Depends(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-    # # Check if the scheme with the provided scheme_name exists
-    # db_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
-    # if db_scheme:
-    #     return responses.JSONResponse(content={"message": "This is an exisiting scheme"})
-    
-    # else:
-    #     try:
-    #         # csa_filepath, admin_filepath = await save_image_locally(file)
-    #         temp_scheme = "https://schemes-img.s3.ap-southeast-1.amazonaws.com/cpf+logo.png"
-    #         new_scheme = SchemeModel(scheme_name=scheme_name, scheme_csa_img_path=temp_scheme, scheme_admin_img_path= temp_scheme)
-    #         db.add(new_scheme)
-    #         db.commit()
-
-    #     except:
-    #         raise HTTPException(status_code=404, detail= "Please upload an image")
-
-    # return responses.JSONResponse(content={"message": "File uploaded successfully", "filename": file.filename})
 
 @app.put("/scheme/{user_id}", status_code=status.HTTP_201_CREATED)
 async def update_scheme_of_user(scheme_input: SchemeInput, db: Session = Depends(create_session)):
@@ -451,24 +389,6 @@ async def delete_scheme(scheme_name: str, db: Session = Depends(create_session))
     db.query(AttemptModel).filter(AttemptModel.question_id.in_(
         db.query(QuestionModel.question_id).filter(QuestionModel.scheme_name == scheme_name)
     )).delete(synchronize_session=False)
-
-    # Delete the stored files
-    # admin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../admin-dashboard/public"))
-    # admin_file_path = os.path.join(admin_path, db_scheme.scheme_admin_img_path)
-    # csa_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../final-csa-dashboard/public"))
-    # csa_file_path = os.path.join(csa_path, db_scheme.scheme_csa_img_path)
-    
-    # if os.path.exists(admin_file_path):
-    #     os.remove(admin_file_path)
-    
-    # if os.path.exists(csa_file_path):
-    #     os.remove(csa_file_path)
-
-    # Delete image from s3 bucket
-    # s3_file_url = db_scheme.scheme_admin_img_path
-    # s3_filename = s3_file_url.split("/")[-1]
-    # print("s3_filename", s3_filename)
-    # s3_client.delete_object(Bucket=BUCKET_NAME, Key=s3_filename)
     
     # Delete the scheme
     db.delete(db_scheme)
@@ -726,6 +646,7 @@ async def get_user_average_scores(user_id: str, db: Session = Depends(create_ses
 
     return scheme_average_scores
 
+## S3 BUCKET ROUTES ##
 def get_s3_image_urls(bucket_name, prefix):
     try:
         response = s3_client.list_objects_v2(

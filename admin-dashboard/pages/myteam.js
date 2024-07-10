@@ -391,35 +391,38 @@ function MyTeam({ teamMembers, allSchemes }) {
                   "•••••••••••••••"
                 )}
               </td>
-                <td className={tableCellStyle}>
-                {editState ? (
-                  <div class="relative inline-block text-left">
-                    <Dropdown>
-                      <DropdownTrigger placement="bottom-end">
-                        <Button className="flex justify-between items-center w-full border border-gray-300 p-1">
-                          {i.access_rights} <AiFillCaretDown />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu
-                        disallowEmptySelection
-                        aria-label="Select access right"
-                        selectionMode="single"
-                        selectedKeys={new Set([i.access_rights])}
-                        onSelectionChange={(keys) => handleChange(idx, "access_rights", keys.anchorKey)}
-                        className="w-full block bg-light-green "
-                      >
-                        {accessRights.map((right) => (
-                          <DropdownItem 
-                          className="hover:bg-lighter-green"
-                          key={right}>{right}</DropdownItem>
-                        ))}
-                      </DropdownMenu>
-                    </Dropdown>
-                    </div>
-                  ) : (
-                    i.access_rights
-                  )}
-                </td>
+              <td className={tableCellStyle}>
+  {editState ? (
+    <div className="relative inline-block text-left">
+      <Dropdown>
+        <DropdownTrigger placement="bottom-end">
+          <Button className="flex justify-between items-center w-full border border-gray-300 p-1">
+            {i.access_rights} <AiFillCaretDown />
+          </Button>
+        </DropdownTrigger>
+        <DropdownMenu
+          disallowEmptySelection
+          aria-label="Select access right"
+          selectionMode="single"
+          selectedKeys={new Set([i.access_rights])}
+          onSelectionChange={(keys) => handleChange(idx, "access_rights", keys.anchorKey)}
+          className="w-full block bg-light-green"
+        >
+          {accessRights.map((right) => (
+            <DropdownItem 
+              className="hover:bg-lighter-green"
+              key={right}
+            >
+              {right}
+            </DropdownItem>
+          ))}
+        </DropdownMenu>
+      </Dropdown>
+    </div>
+  ) : (
+    i.access_rights
+  )}
+</td>
                 <td className={tableCellStyle}>
                   <SchemeTags
                     schemes={i.schemes}

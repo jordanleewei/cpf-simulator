@@ -14,11 +14,6 @@ export default function SchemeFilter({
     setOpen(false);
   };
 
-  // Calculate maximum width based on the longest scheme name
-  const maxSchemeWidth = Math.max(
-    ...allSchemes.map((scheme) => scheme.length)
-  );
-
   return (
     <div className="relative">
       <button

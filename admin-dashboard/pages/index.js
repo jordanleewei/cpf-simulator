@@ -69,7 +69,7 @@ export default function Login({ setUser }) {
             </div>
             <div className="icon-input pt-2 flex items-center">
               <input
-                type={isPasswordVisible ? "text" : "password"} // Toggle input type
+                type={isPasswordVisible ? "text" : "password"} 
                 id="password"
                 name="password"
                 placeholder="Enter your Password"
@@ -93,14 +93,6 @@ export default function Login({ setUser }) {
               Login
             </button>
           </form>
-          {/* <div className="flex justify-center mt-4">
-            <button
-              onClick={() => router.push("/register")}
-              className="text-blue-600 hover:underline"
-            >
-              Register Now
-            </button>
-          </div> */}
         </div>
       </div>
     </div>

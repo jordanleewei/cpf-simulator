@@ -24,7 +24,7 @@ function AddProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State for password visibility
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [selectedAccessIndex, setSelectedAccessIndex] = useState(0);
   const accessRights = ["Trainee", "Admin"];
 

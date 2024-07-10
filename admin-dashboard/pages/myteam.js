@@ -140,8 +140,8 @@ function MyTeam({ teamMembers, allSchemes }) {
     setAllTeamMembers(originalTeamMembers);
     setDisplayMembers(originalTeamMembers);
     setEditState(false);
-    setDeleteQueue([]); // Reset delete queue
-    setResetPasswordIndex(null); // Reset password reset state
+    setDeleteQueue([]); 
+    setResetPasswordIndex(null); 
   };
 
   const handleChange = (index, field, value) => {
@@ -191,7 +191,7 @@ function MyTeam({ teamMembers, allSchemes }) {
         ) {
           console.log(`Changes detected for member ${member.uuid}, updating...`);
           
-          // Update user details - name | email | access rights
+          // Update user details 
           const userRes = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${member.uuid}`, {
             method: "PUT",
             headers: {

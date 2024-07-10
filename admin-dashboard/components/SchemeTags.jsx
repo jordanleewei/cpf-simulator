@@ -30,10 +30,6 @@ export default function SchemeTags({
     onChangeSchemes(updatedChecked);
   };
 
-  const maxSchemeWidth = Math.max(
-    ...allSchemes.map((scheme) => scheme.length)
-  );
-
   const SchemeTag = ({ schemeName }) => {
     return (
       <div className="flex justify-center items-center bg-light-blue px-2 py-1 rounded-lg text-dark-blue scheme-tag">

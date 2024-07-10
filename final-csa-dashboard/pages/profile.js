@@ -112,7 +112,7 @@ function Profile({ user }) {
   const handleDownload = async () => {
     const csvContent = convertToCSV(attempts);
     const csvBlob = new Blob([csvContent], { type: "text/csv" });
-    saveAs(csvBlob, `${userName}_all_attempts.csv`); // Use userName state instead of loginDetails.name
+    saveAs(csvBlob, `${userName}_all_attempts.csv`); 
   };
 
   return (

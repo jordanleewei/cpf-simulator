@@ -5,7 +5,7 @@ import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 export default function Login({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State for password visibility
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [notification, setNotification] = useState("");
 
   const router = useRouter();
@@ -65,7 +65,7 @@ export default function Login({ setUser }) {
             </div>
             <div className="icon-input pt-2 flex items-center">
               <input
-                type={isPasswordVisible ? "text" : "password"} // Toggle input type
+                type={isPasswordVisible ? "text" : "password"} 
                 id="password"
                 name="password"
                 placeholder="Enter your Password"

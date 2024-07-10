@@ -16,7 +16,7 @@ export default function App({ Component, pageProps }) {
       setUser(loggedUser);
 
       let inactivityTimeout;
-      const inactivityThreshold = 3600000; // 1 hour timeout in milliseconds
+      const inactivityThreshold = 3600000; // 1 hour in milliseconds
 
       // Function to handle user activity
       const handleActivity = () => {

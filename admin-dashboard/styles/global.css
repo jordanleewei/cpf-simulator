@@ -127,3 +127,59 @@ code {
   gap: 1rem; 
   
 }
+
+.schemes-container {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  justify-content: space-between;
+  padding-top: 2.5rem;
+  row-gap: 2rem;
+  
+}
+
+.schemes-page-container {
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  padding-left: 5rem; 
+  padding-right: 5rem; 
+  padding-top: 2.5rem; 
+  padding-bottom: 2.5rem; 
+}
+
+.lower-half-profile-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #E6EDED;
+}
+
+.lower-half-profile-container .columns-container {
+  display: flex;
+}
+
+.lower-half-profile-container .column-left {
+  width: 33.33%; /* 1/3 width */
+  background-color: #f0f0f0; /* Light gray background */
+  border-radius: 10px; /* Rounded corners */
+  margin-top: 1rem; /* Margin top */
+  margin-right: 1rem; /* Margin right */
+  padding: 1.25rem 1rem; /* Padding */
+}
+
+.lower-half-profile-container .column-right {
+  width: 66.67%; /* 2/3 width */
+  background-color: #f0f0f0; /* Light gray background */
+  border-radius: 10px; /* Rounded corners */
+  margin-top: 1rem; /* Margin top */
+  padding: 1.25rem 1rem; /* Padding */
+}
+
+.profile-container {
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background-color: #F0F0F0;
+  padding-top: 1rem;
+  padding-left: 1rem;
+  margin-top: 0;
+}

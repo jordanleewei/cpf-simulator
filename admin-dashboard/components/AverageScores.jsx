@@ -61,6 +61,7 @@ export default function AverageScores({ user }) {
 
   const handlePieChart = (scheme_name) => {
     setPieSelect(scheme_name);
+    setOpen(false);
 
     const allAvg = averageScores.filter((i) => i.scheme_name == scheme_name)[0];
 
@@ -106,7 +107,7 @@ export default function AverageScores({ user }) {
                   {averageScores.map((scores) => (
                     <li
                       key={scores.scheme_name}
-                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 ${
+                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 hover:cursor-pointer hover:bg-light-gray ${
                         pieSelect == scores.scheme_name
                           ? "bg-light-gray"
                           : "bg-dark-grey"

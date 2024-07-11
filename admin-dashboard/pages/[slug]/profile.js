@@ -119,18 +119,15 @@ function Profile() {
   };
 
   return (
-    <>
-      <div className="bg-light-green p-4">
-        <div className="font-bold text-xl pl-2">
-          {userProfile.name}'s Profile
-        </div>
+      <div className="profile-container">
+        <div className="font-bold text-xl pl-2">{userProfile.name}'s Profile</div>
         <AverageScores className="mt-2" user={userProfile} />
-
-        <div className="h-max-content flex flex-row items-start">
-          <div className="bg-light-gray rounded-lg w-1/3 mt-4 mr-4 py-5">
+        <div className="lower-half-profile-container">
+          <div className="columns-container">
+            <div className="column-left">
             <h3 className="pl-5 font-bold">Scheme Mastery</h3>
-            <div className="rounded-lg p-5 w-full h-full flex flex-col justify-center items-center gap-5">
-              {subCat == "" ? (
+            <div className="rounded-lg p-5 flex flex-col justify-center items-center gap-5">
+            {subCat.length === 0 ? (
                 <div className="pt-2">No schemes assigned</div>
               ) : (
                 subCat.map((cat, idx) => (
@@ -144,29 +141,29 @@ function Profile() {
               )}
             </div>
           </div>
-          <div className="bg-light-gray rounded-lg w-2/3 mt-4 relative">
-            <h3 className="pl-5 pt-5 font-bold">Practice Details</h3>
-            {attempts == "" ? (
-              <div className="flex justify-center items-center py-8">
-                No attempts
-              </div>
-            ) : (
-              <div className="rounded-lg py-4 px-4 h-full flex items-center relative">
-                <CustomTable rows={attempts} user_id={userProfile.uuid} />
-                <button
-                  type="button"
-                  className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"
-                  onClick={handleDownload}
-                >
-                  <Download />
-                  Download All
-                </button>
-              </div>
-            )}
-          </div>
+          <div className="column-right">
+          <h3 className="pl-5 font-bold">Practice Details</h3>
+          {attempts.length > 0 ? (
+            <div className="rounded-lg py-4 px-4 h-full flex relative">
+              <CustomTable rows={attempts} />
+              <button
+                type="button"
+                className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"
+                onClick={handleDownload}
+              >
+                <Download />
+                Download All
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center items-center py-8">
+              No attempts
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
+    </div>
   );
 }
 

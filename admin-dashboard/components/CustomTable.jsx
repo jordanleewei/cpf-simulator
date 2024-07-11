@@ -63,10 +63,10 @@ export default function TableCustomized({ rows, user_id }) {
               <td align="right">{row.date}</td>
               <td
                 align="right"
-                className="hover:underline hover:underline-offset-2"
+                className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
                 onClick={() => handleReviewNav(row.attempt_id)}
               >
-                Review
+                Click to view attempt
               </td>
             </tr>
           ))}

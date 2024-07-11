@@ -18,7 +18,7 @@ export default function SchemeCard({
   }
 
   return (
-    <div className="flex flex-col p-4 border-4 rounded-xl max-w-[350px]">
+    <div className="flex flex-col p-4 border-4 rounded-xl max-w-[350px] relative items-start">
       <img
         src={scheme_img}
         alt="scheme image"

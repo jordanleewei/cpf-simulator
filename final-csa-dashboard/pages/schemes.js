@@ -30,14 +30,12 @@ function Schemes({ user }) {
   }, [user]);
 
   return (
-    <div className="text-base">
-      <div>
+    <div className="schemes-page-container">
         {/* Header */}
-        <div className="w-screen h-auto flex flex-row justify-between items-center px-20 pt-10 pb-10 text-black">
+        <div className="flex flex-row justify-between items-center text-black">
           <div className="font-bold text-3xl">Schemes Overview</div>
         </div>
-        <div className="flex flex-col gap-y-5">
-          <div className="flex flex-row flex-wrap px-20 justify-around gap-y-7 mb-8">
+        <div className="schemes-container">
             {schemes.length > 0 ? (
               schemes.map((scheme) => (
                 <SchemeCard
@@ -49,7 +47,7 @@ function Schemes({ user }) {
                 />
               ))
             ) : (
-              <div className="w-full flex flex-col items-center justify-center text-center py-20">
+              <div className="flex flex-col items-center justify-center text-center py-20">
                 <div className="text-xl font-semibold text-gray-600 mb-4">
                   No Scheme Found. 
                   Please contact your administrator.
@@ -57,9 +55,7 @@ function Schemes({ user }) {
               </div>
             )}
           </div>
-        </div>
       </div>
-    </div>
   );
 }
 

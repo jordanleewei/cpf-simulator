@@ -108,7 +108,7 @@ function Exercises(user) {
           <span className="back-text">Back to Schemes - Overview</span>
         </div>
       </button>
-      <div className="w-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4">
         <div className="bg-white min-w-full rounded-md p-6">
           <div className="font-bold text-3xl pt-6 pb-10">{name} Scheme</div>
 

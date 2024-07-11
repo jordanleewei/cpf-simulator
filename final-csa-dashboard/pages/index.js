@@ -98,9 +98,7 @@ export default function Home() {
         </div>
 
         {/* Schemes */}
-        <div className="flex flex-col gap-y-5">
-          <div className="flex flex-col gap-y-5 ">
-            <div className="flex flex-row flex-wrap px-20 justify-around gap-y-7 mb-8">
+        <div className="index-schemes-container">
               {schemes.map((i) => (
                 <SchemeCard
                   key={i.scheme_name}
@@ -108,6 +106,7 @@ export default function Home() {
                   scheme_img={i.scheme_admin_img_path}
                   questions={i.questions.length}
                   scheme_button={false}
+                  className="flex flex-col items-center"
                 />
               ))}
             </div>
@@ -120,8 +119,5 @@ export default function Home() {
             </Link>
           </div>
         </div>
-      </div>
-      
-    </div>
   );
 }

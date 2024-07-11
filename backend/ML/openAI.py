@@ -15,7 +15,7 @@ from fuzzywuzzy import fuzz
 
 load_dotenv()
 
-file_path = "./ML/faq_data.csv"
+file_path = "./ML/faq_data_11Jul.csv"
 
 loader = CSVLoader(file_path=file_path, encoding='utf-8')
 data = loader.load()

@@ -1,3 +1,4 @@
+import os
 from pydantic import BaseModel
 from pydantic_settings import (BaseSettings, SettingsConfigDict)
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,35 +16,24 @@ class DatabaseConfig(BaseModel):
 
     # dsn: str = "mysql+pymysql://root:test1234!@localhost:3306/testing"
     # dsn: str = "mysql+pymysql://myuser:mypassword@localhost:3306/testing"
-    dsn: str = "mysql+pymysql://myuser:mypassword@mysql:3306/testing"
+    dsn: str = os.getenv("MYAPI_DATABASE__DSN")
 
 
 
 class Config(BaseSettings):
-    """API configuration parameters.
-
-    Automatically read modifications to the configuration parametersß
-    from environment variables and ``.env`` file.
-
-    Attributes:
-        database:
-            Database configuration settings.
-            Instance of :class:`app.backend.config.DatabaseConfig`.
-        token_key:
-            Random secret key used to sign JWT tokens.
-    """
-
     database: DatabaseConfig = DatabaseConfig()
     token_key: str = ""
     upload_path: str = "scheme_imgs"
     
-    # model_config = SettingsConfigDict(
-    #     env_file=".env",
-    #     env_file_encoding="utf-8",
-    #     env_prefix="MYAPI_",
-    #     env_nested_delimiter="__",
-    #     case_sensitive=False,
-    # )
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="MYAPI_",
+        env_nested_delimiter="__",
+        case_sensitive=False,
+        extra="ignore"  # This will ignore any extra fields not defined in the model
+    )
+
 
 
 config = Config()

@@ -9,6 +9,8 @@ import { ChevronLeft } from "@mui/icons-material";
 import isAuth from "../../components/isAuth";
 
 function Exercises(user) {
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
   const router = useRouter();
   const { submit } = router.query;
   const [name, setName] = useState("");
@@ -24,7 +26,7 @@ function Exercises(user) {
         window.localStorage.setItem("schemeName", scheme_name);
 
         const res = await fetch(
-          `https://d17ygk7qno65io.cloudfront.net/table/${user.uuid}/${scheme_name}`
+          `${process.env.BACKEND_API_URL}/table/${user.uuid}/${scheme_name}`
         );
         const questions = await res.json();
 

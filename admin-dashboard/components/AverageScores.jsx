@@ -7,13 +7,16 @@ export default function AverageScores({ user }) {
   const [averageScores, setAverageScores] = useState("");
   const [pieSelect, setPieSelect] = useState("All");
   const [pieContent, setPieContent] = useState([]);
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
+
 
   useEffect(() => {
     async function getAverageScores() {
       try {
         // retrive data
         const res = await fetch(
-          `https://d17ygk7qno65io.cloudfront.net/attempt/average_scores/user/${user.uuid}`
+          `${API_URL}/attempt/average_scores/user/${user.uuid}`
         );
 
         const averageData = await res.json();

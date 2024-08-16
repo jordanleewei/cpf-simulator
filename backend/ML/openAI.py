@@ -79,7 +79,7 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
     llm = ChatOpenAI(
         temperature=1,
         openai_api_key=os.getenv("OPENAI_KEY"),
-        model_name="gpt-3.5-turbo-0125"
+        model_name="gpt-4o-mini"
     )
 
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=False)

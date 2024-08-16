@@ -10,6 +10,8 @@ import isAuth from "../../components/isAuth.jsx";
 import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
 function ReviewPage({ user }) {
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
   const router = useRouter();
   const review = router.query.review === "true";
   const submit = router.query.submit === "true";
@@ -25,7 +27,7 @@ function ReviewPage({ user }) {
     async function getAttempt() {
       if (router.isReady) {
         const attempt_id = router.query.slug;
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/attempt/${attempt_id}`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/attempt/${attempt_id}`);
 
         const attemptData = await res.json();
         console.log("attempt", attemptData);
@@ -90,20 +92,20 @@ function ReviewPage({ user }) {
     const rows = [
       [
         loginDetails.name,
-      loginDetails.email,
-      `"${attempt.scheme_name}"`,
-      `"${attempt.date}"`,
-      `"${attempt.title}"`,
-      `"${attempt.question_details}"`,
-      `"${attempt.answer}"`,
-      `"${attempt.system_name}"`,
-      `"${attempt.system_url}"`,
-      `"${attempt.accuracy_feedback}"`,
-      `${(attempt.accuracy_score / 5) * 100}%`,
-      `"${attempt.precision_feedback}"`,
-      `${(attempt.precision_score / 5) * 100}%`,
-      `"${attempt.tone_feedback}"`,
-      `${(attempt.tone_score / 5) * 100}%`,
+        loginDetails.email,
+        `"${attempt.scheme_name}"`,
+        `"${attempt.date}"`,
+        `"${attempt.title}"`,
+        `"${attempt.question_details}"`,
+        `"${attempt.answer}"`,
+        `"${attempt.system_name}"`,
+        `"${attempt.system_url}"`,
+        `"${attempt.accuracy_feedback}"`,
+        `${(attempt.accuracy_score / 5) * 100}%`,
+        `"${attempt.precision_feedback}"`,
+        `${(attempt.precision_score / 5) * 100}%`,
+        `"${attempt.tone_feedback}"`,
+        `${(attempt.tone_score / 5) * 100}%`,
       ]
     ];
 

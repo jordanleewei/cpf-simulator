@@ -1,40 +1,13 @@
-version: "3"
+version: '3.8'
 
 services:
-  dashboard-backend:
-    build: .
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    depends_on:
-      - mysql
+    env_file:
+      - .env
     volumes:
-      - ./:/code:ro
-    container_name: dashboard-backend
-    networks:
-      - my-network
-    
-  mysql:
-    image: mysql:latest
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: test1234!
-      MYSQL_DATABASE: testing
-      MYSQL_USER: myuser
-      MYSQL_PASSWORD: mypassword
-    container_name: mysql
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - my-network
-
-    # deploy:
-    #   resources:
-    #     limits:
-    #       memory: 512M
-volumes:
-  mysql-data:
-
-networks:
-  my-network:
-    driver: bridge
+      - .:/backend

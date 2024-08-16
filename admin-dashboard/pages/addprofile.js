@@ -18,6 +18,7 @@ import { BiRefresh } from "react-icons/bi";
 import isAuth from "../components/isAuth";
 
 function AddProfile() {
+  const API_URL = process.env.BACKEND_API_URL;
   const router = useRouter();
 
   // State variables
@@ -44,7 +45,8 @@ function AddProfile() {
   // Function to add a new user
   async function addUser(name, email, password, access_rights) {
     try {
-      const response = await fetch("https://d17ygk7qno65io.cloudfront.net/user", {
+      const response = await fetch(
+        `${API_URL}/user`, {
         method: "POST",
         body: JSON.stringify({
           name: name,

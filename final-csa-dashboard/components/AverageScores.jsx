@@ -7,13 +7,15 @@ export default function AverageScores({ user }) {
   const [averageScores, setAverageScores] = useState("");
   const [pieSelect, setPieSelect] = useState("All");
   const [pieContent, setPieContent] = useState([]);
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
 
   useEffect(() => {
     async function getAverageScores() {
       try {
         // retrive data
         const res = await fetch(
-          `https://d17ygk7qno65io.cloudfront.net/attempt/average_scores/user/${user.uuid}`
+          `${process.env.BACKEND_API_URL}/attempt/average_scores/user/${user.uuid}`
         );
 
         const averageData = await res.json();
@@ -91,9 +93,8 @@ export default function AverageScores({ user }) {
         {averageScores == "" ? null : (
           <div className="relative">
             <button
-              className={`flex justify-between items-center bg-dark-grey px-3 py-1 text-dark-blue rounded-t-lg gap-3 w-32 text-wrap ${
-                open ? "rounded-b-none" : "rounded-b-lg"
-              }`}
+              className={`flex justify-between items-center bg-dark-grey px-3 py-1 text-dark-blue rounded-t-lg gap-3 w-32 text-wrap ${open ? "rounded-b-none" : "rounded-b-lg"
+                }`}
               onClick={() => setOpen(!open)}
             >
               {pieSelect}
@@ -107,11 +108,10 @@ export default function AverageScores({ user }) {
                   {averageScores.map((scores) => (
                     <li
                       key={scores.scheme_name}
-                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 hover:cursor-pointer hover:bg-light-gray ${
-                        pieSelect == scores.scheme_name
+                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 hover:cursor-pointer hover:bg-light-gray ${pieSelect == scores.scheme_name
                           ? "bg-light-gray"
                           : "bg-dark-grey"
-                      }`}
+                        }`}
                       onClick={() => handlePieChart(scores.scheme_name)}
                     >
                       {scores.scheme_name}

@@ -13,11 +13,13 @@ function Profile({ user }) {
   const [attempts, setAttempts] = useState([]);
   const [subCat, setSubCat] = useState([]);
   const [userName, setUserName] = useState("");
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
 
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user.uuid}`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/user/${user.uuid}`);
         const userData = await res.json();
         if (res.ok) {
           setUserName(userData.name);
@@ -35,7 +37,7 @@ function Profile({ user }) {
   useEffect(() => {
     async function getAttempts() {
       try {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/attempt/user/${user.uuid}`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/attempt/user/${user.uuid}`);
         const attemptRes = await res.json();
         if (res.ok) {
           setAttempts(attemptRes.reverse());
@@ -47,7 +49,7 @@ function Profile({ user }) {
 
     async function getSubCat() {
       try {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user.uuid}/schemes`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/user/${user.uuid}/schemes`);
         const subCatData = await res.json();
         if (res.ok) {
           setSubCat(subCatData);
@@ -83,8 +85,8 @@ function Profile({ user }) {
     ];
 
     const rows = attempts.map((attempt) => [
-      userName, 
-      user.email, 
+      userName,
+      user.email,
       attempt.scheme_name,
       attempt.date,
       `"${attempt.question_title}"`,
@@ -112,7 +114,7 @@ function Profile({ user }) {
   const handleDownload = async () => {
     const csvContent = convertToCSV(attempts);
     const csvBlob = new Blob([csvContent], { type: "text/csv" });
-    saveAs(csvBlob, `${userName}_all_attempts.csv`); 
+    saveAs(csvBlob, `${userName}_all_attempts.csv`);
   };
 
   return (
@@ -120,48 +122,48 @@ function Profile({ user }) {
       <div className="font-bold text-xl pl-2">Welcome, {userName}</div>
       <AverageScores className="mt-2 " user={user} />
       <div className="lower-half-profile-container">
-      <div className="columns-container">
-        <div className="column-left">
-          <h3 className="pl-5 font-bold">Scheme Mastery</h3>
-          <div className="rounded-lg p-5 flex flex-col justify-center items-center gap-5">
-            {subCat.length === 0 ? (
-              <div className="pt-2">No schemes assigned</div>
+        <div className="columns-container">
+          <div className="column-left">
+            <h3 className="pl-5 font-bold">Scheme Mastery</h3>
+            <div className="rounded-lg p-5 flex flex-col justify-center items-center gap-5">
+              {subCat.length === 0 ? (
+                <div className="pt-2">No schemes assigned</div>
+              ) : (
+                subCat.map((cat, idx) => (
+                  <ProgressBar
+                    key={idx}
+                    attemptedNum={cat.num_attempted_questions}
+                    qnNum={cat.num_questions}
+                    schemeName={cat.scheme_name}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+          <div className="column-right">
+            <h3 className="pl-5 font-bold">Practice Details</h3>
+            {attempts.length > 0 ? (
+              <div className="rounded-lg py-4 px-4 h-full flex relative">
+                <CustomTable rows={attempts} />
+                <button
+                  type="button"
+                  className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"
+                  onClick={handleDownload}
+                >
+                  <Download />
+                  Download All
+                </button>
+              </div>
             ) : (
-              subCat.map((cat, idx) => (
-                <ProgressBar
-                  key={idx}
-                  attemptedNum={cat.num_attempted_questions}
-                  qnNum={cat.num_questions}
-                  schemeName={cat.scheme_name}
-                />
-              ))
+              <div className="flex justify-center items-center py-8">
+                No attempts
+              </div>
             )}
           </div>
         </div>
-        <div className="column-right">
-          <h3 className="pl-5 font-bold">Practice Details</h3>
-          {attempts.length > 0 ? (
-            <div className="rounded-lg py-4 px-4 h-full flex relative">
-              <CustomTable rows={attempts} />
-              <button
-                type="button"
-                className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"
-                onClick={handleDownload}
-              >
-                <Download />
-                Download All
-              </button>
-            </div>
-          ) : (
-            <div className="flex justify-center items-center py-8">
-              No attempts
-            </div>
-          )}
-        </div>
       </div>
     </div>
-    </div>
-    
+
   );
 }
 

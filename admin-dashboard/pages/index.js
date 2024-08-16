@@ -9,6 +9,7 @@ export default function Login({ setUser }) {
   const [notification, setNotification] = useState("");
 
   const router = useRouter();
+  const API_URL = process.env.BACKEND_API_URL; // Fetch the API URL from the environment variable
 
   function handleNotification(noti) {
     setNotification(noti);
@@ -19,7 +20,7 @@ export default function Login({ setUser }) {
     event.preventDefault();
 
     try {
-      const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/login`, {
+      const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -47,49 +48,49 @@ export default function Login({ setUser }) {
   }
 
   return (
-      <div className="login-component">
-        <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 md:max-w-lg lg:max-w-xl">
-          <form onSubmit={onSubmit} className="flex justify-start flex-col w-full">
-            <h1 className="flex pb-5 sm:text-2xl md:text-3xl font-bold">
-              Admin Module
-            </h1>
-            <div className="icon-input pt-2">
-              <input
-                type="text"
-                id="email"
-                name="email"
-                placeholder="Enter your Email"
-                onChange={({ target }) => setEmail(target.value)}
-                className="px-3 py-2 rounded-md border border-gray-300 sm:w-[300px] placeholder:text-xs md:placeholder:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-            <div className="icon-input pt-2 flex items-center">
-              <input
-                type={isPasswordVisible ? "text" : "password"} 
-                id="password"
-                name="password"
-                placeholder="Enter your Password"
-                onChange={({ target }) => setPassword(target.value)}
-                className="px-3 py-2 rounded-md border border-gray-300 sm:w-[300px] placeholder:text-xs md:placeholder:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <button
-                type="button"
-                className="ml-2"
-                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-              >
-                {isPasswordVisible ? <AiFillEyeInvisible /> : <AiFillEye />}
-              </button>
-            </div>
-            <div className="text-red-600 text-sm">{notification}</div>
+    <div className="login-component">
+      <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 md:max-w-lg lg:max-w-xl">
+        <form onSubmit={onSubmit} className="flex justify-start flex-col w-full">
+          <h1 className="flex pb-5 sm:text-2xl md:text-3xl font-bold">
+            Admin Module
+          </h1>
+          <div className="icon-input pt-2">
+            <input
+              type="text"
+              id="email"
+              name="email"
+              placeholder="Enter your Email"
+              onChange={({ target }) => setEmail(target.value)}
+              className="px-3 py-2 rounded-md border border-gray-300 sm:w-[300px] placeholder:text-xs md:placeholder:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div className="icon-input pt-2 flex items-center">
+            <input
+              type={isPasswordVisible ? "text" : "password"} 
+              id="password"
+              name="password"
+              placeholder="Enter your Password"
+              onChange={({ target }) => setPassword(target.value)}
+              className="px-3 py-2 rounded-md border border-gray-300 sm:w-[300px] placeholder:text-xs md:placeholder:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
             <button
-              type="submit"
-              id="login"
-              className="bg-dark-green hover:bg-darker-green text-white rounded-lg px-8 py-2 mt-5 sm:w-[300px] focus:outline-none focus:ring-2"
+              type="button"
+              className="ml-2"
+              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
             >
-              Login
+              {isPasswordVisible ? <AiFillEyeInvisible /> : <AiFillEye />}
             </button>
-          </form>
-        </div>
+          </div>
+          <div className="text-red-600 text-sm">{notification}</div>
+          <button
+            type="submit"
+            id="login"
+            className="bg-dark-green hover:bg-darker-green text-white rounded-lg px-8 py-2 mt-5 sm:w-[300px] focus:outline-none focus:ring-2"
+          >
+            Login
+          </button>
+        </form>
       </div>
+    </div>
   );
 }

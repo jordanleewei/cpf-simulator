@@ -10,6 +10,8 @@ import isAuth from "../../../components/isAuth.jsx";
 import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
 function ReviewPage() {
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
   const router = useRouter();
   const { review, submit, profile, scheme_name } = router.query;
   const [attempt, setAttempt] = useState([]);
@@ -19,7 +21,7 @@ function ReviewPage() {
     async function getAttempt() {
       if (router.isReady) {
         const attempt_id = router.query.slug;
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/attempt/${attempt_id}`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/attempt/${attempt_id}`);
 
         const attemptData = await res.json();
 
@@ -30,7 +32,7 @@ function ReviewPage() {
       if (router.isReady) {
         try {
           const res = await fetch(
-            `https://d17ygk7qno65io.cloudfront.net/user/${router.query.user_id}`
+            `${process.env.BACKEND_API_URL}/user/${router.query.user_id}`
           );
 
           const userInfo = await res.json();

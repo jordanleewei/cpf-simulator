@@ -7,6 +7,8 @@ import isAuth from "../components/isAuth";
 import DeleteModal from "../components/DeleteModal";
 
 function Schemes() {
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
   const [schemes, setSchemes] = useState([]);
   const [editState, setEditState] = useState(false);
   const [deletedSchemes, setDeletedSchemes] = useState([]);
@@ -18,7 +20,7 @@ function Schemes() {
   useEffect(() => {
     async function getSchemes() {
       try {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/scheme`);
         const schemeData = await res.json();
 
         // Format scheme names to capitalized format
@@ -51,7 +53,7 @@ function Schemes() {
   const cancelDelete = () => {
     setSchemes(originalSchemes);
     setDeletedSchemes([]);
-    setDeleteId(""); 
+    setDeleteId("");
     setEditState(false);
   };
 
@@ -60,7 +62,7 @@ function Schemes() {
     try {
       // Delete schemes from the backend
       for (const schemeName of deletedSchemes) {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme/${schemeName}`, {
+        const res = await fetch(`${process.env.BACKEND_API_URL}/scheme/${schemeName}`, {
           method: "DELETE",
         });
         if (!res.ok) {
@@ -77,75 +79,75 @@ function Schemes() {
 
   return (
     <div className="schemes-page-container">
-        {/* Header */}
-        <div className="flex flex-row justify-between items-center text-black">
-          <div className="font-bold text-3xl">Schemes Overview</div>
-          {/* Add Scheme and Edit Buttons */}
-          {schemes.length > 0 && (
-            <div className="flex justify-end gap-3">
-              {editState ? (
-                <>
-                  <button
-                    className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                    onClick={() => router.push("/addscheme")}
-                  >
-                    Add Scheme
-                  </button>
-                  <button
-                    className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                    onClick={handleSave}
-                  >
-                    Save
-                  </button>
-                  <button
-                    className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                    onClick= {cancelDelete}
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                  onClick={() => setEditState(true)}
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="schemes-container">
-            {schemes.length > 0 ? (
-              schemes.map((scheme) => (
-                <SchemeCard
-                  key={scheme.scheme_name}
-                  scheme_name={scheme.scheme_name}
-                  scheme_img={scheme.scheme_admin_img_path}
-                  questions={scheme.questions.length}
-                  scheme_button={true}
-                  editState={editState}
-                  schemes={schemes}
-                  setSchemes={setSchemes}
-                  setDeleteId={setDeleteId}
-                  isDeleted={deletedSchemes.includes(scheme.scheme_name)}
-                  handleDelete={() => handleDelete(scheme.scheme_name)}
-                />
-              ))
-            ) : (
-              <div className="items-center justify-center text-center py-20">
-                <div className="text-xl font-semibold text-gray-600 mb-4">
-                  No Scheme Found
-                </div>
+      {/* Header */}
+      <div className="flex flex-row justify-between items-center text-black">
+        <div className="font-bold text-3xl">Schemes Overview</div>
+        {/* Add Scheme and Edit Buttons */}
+        {schemes.length > 0 && (
+          <div className="flex justify-end gap-3">
+            {editState ? (
+              <>
                 <button
                   className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
                   onClick={() => router.push("/addscheme")}
                 >
                   Add Scheme
                 </button>
-              </div>
+                <button
+                  className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                  onClick={handleSave}
+                >
+                  Save
+                </button>
+                <button
+                  className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                  onClick={cancelDelete}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                onClick={() => setEditState(true)}
+              >
+                Edit
+              </button>
             )}
-        </div>
+          </div>
+        )}
+      </div>
+      <div className="schemes-container">
+        {schemes.length > 0 ? (
+          schemes.map((scheme) => (
+            <SchemeCard
+              key={scheme.scheme_name}
+              scheme_name={scheme.scheme_name}
+              scheme_img={scheme.scheme_admin_img_path}
+              questions={scheme.questions.length}
+              scheme_button={true}
+              editState={editState}
+              schemes={schemes}
+              setSchemes={setSchemes}
+              setDeleteId={setDeleteId}
+              isDeleted={deletedSchemes.includes(scheme.scheme_name)}
+              handleDelete={() => handleDelete(scheme.scheme_name)}
+            />
+          ))
+        ) : (
+          <div className="items-center justify-center text-center py-20">
+            <div className="text-xl font-semibold text-gray-600 mb-4">
+              No Scheme Found
+            </div>
+            <button
+              className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+              onClick={() => router.push("/addscheme")}
+            >
+              Add Scheme
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Delete Modal */}
       {deleteId && (

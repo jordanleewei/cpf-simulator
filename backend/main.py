@@ -31,11 +31,8 @@ app = FastAPI()
 # Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
-origins = [
-    "https://d3c855xi262dlx.cloudfront.net",
-    "https://d38aq7hgnx9or9.cloudfront.net",
-    "https://d17ygk7qno65io.cloudfront.net",
-]
+# Load CORS origins from environment variable
+origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -130,7 +127,7 @@ async def get_all_users(db: Session = Depends(create_session)):
 
 @app.get("/user/{user_id}", status_code=status.HTTP_201_CREATED)
 async def read_user(user_id:str, db: Session = Depends(create_session)):
-    db_user = db.query(UserModel).filter(UserModel.uuid == user_id).first()
+    db_user = db.query(User).filter(UserModel.uuid == user_id).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     

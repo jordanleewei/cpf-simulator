@@ -6,6 +6,8 @@ import isAuth from "../../components/isAuth";
 import BackBar from "../../components/BackBar";
 
 function Question() {
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
   const router = useRouter();
   const [question, setQuestion] = useState({});
 
@@ -14,7 +16,7 @@ function Question() {
       if (router.isReady) {
         try {
           const res = await fetch(
-            `https://d17ygk7qno65io.cloudfront.net/question/${router.query.slug}`
+            `${process.env.BACKEND_API_URL}/question/${router.query.slug}`
           );
           if (!res.ok) {
             throw new Error("Failed to fetch data");
@@ -40,47 +42,47 @@ function Question() {
 
   return (
     <div className="exercise-container">
-        <BackBar review={false} submit={false} profile={false} />
-        <div className="exercise-card">
-            <div className="font-bold text-2xl">{question.title}</div>
-            <div>
-              <div>
-                <span className="font-bold">Scheme: </span>
-                {question.scheme_name}
-              </div>
+      <BackBar review={false} submit={false} profile={false} />
+      <div className="exercise-card">
+        <div className="font-bold text-2xl">{question.title}</div>
+        <div>
+          <div>
+            <span className="font-bold">Scheme: </span>
+            {question.scheme_name}
+          </div>
 
-              <div>
-                <span className="font-bold">Difficulty: </span>
-                {question.question_difficulty}
-              </div>
-            </div>
-
-            <div>
-              <p className="font-bold">Question:</p>
-              <p>{question.question_details}</p>
-            </div>
-            <div>
-              <p className="font-bold">Ideal Answer:</p>
-              <p>{question.ideal}</p>
-            </div>
-            <div>
-              <p className="font-bold">Verified System Names:</p>
-              <ul>
-                {systemNames.map((name, index) => (
-                  <li key={index}>{name}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="font-bold">Verified System URLs:</p>
-              <ul>
-                {systemUrls.map((url, index) => (
-                  <li key={index}>{url}</li>
-                ))}
-              </ul>
-            </div>
+          <div>
+            <span className="font-bold">Difficulty: </span>
+            {question.question_difficulty}
           </div>
         </div>
+
+        <div>
+          <p className="font-bold">Question:</p>
+          <p>{question.question_details}</p>
+        </div>
+        <div>
+          <p className="font-bold">Ideal Answer:</p>
+          <p>{question.ideal}</p>
+        </div>
+        <div>
+          <p className="font-bold">Verified System Names:</p>
+          <ul>
+            {systemNames.map((name, index) => (
+              <li key={index}>{name}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="font-bold">Verified System URLs:</p>
+          <ul>
+            {systemUrls.map((url, index) => (
+              <li key={index}>{url}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }
 

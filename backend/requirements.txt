@@ -18,3 +18,4 @@ requests
 boto3
 passlib
 fuzzywuzzy
+python-Levenshtein

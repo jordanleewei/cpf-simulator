@@ -14,11 +14,13 @@ import SchemeCard from "../components/SchemeCard";
 
 export default function Home() {
   const [schemes, setSchemes] = useState([]);
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
 
   useEffect(() => {
     async function getSchemes() {
       try {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme`);
+        const res = await fetch(`${process.env.BACKEND_API_URL}/scheme`);
 
         const schemeData = await res.json();
         setSchemes(schemeData);
@@ -39,15 +41,15 @@ export default function Home() {
             Start training with CPF simulator
           </div>
           <div>
-          We are excited to introduce a new training simulator powered by GenAI, designed to enhance the proficiency of CCU officers in handling written enquiries.
+            We are excited to introduce a new training simulator powered by GenAI, designed to enhance the proficiency of CCU officers in handling written enquiries.
           </div>
           <div>
-          <Link href="/login">
-            <button className="bg-dark-green hover:bg-darker-green text-white py-3 px-8 rounded-lg">
-              Let's Start
-            </button>
-          </Link>
-        </div>
+            <Link href="/login">
+              <button className="bg-dark-green hover:bg-darker-green text-white py-3 px-8 rounded-lg">
+                Let's Start
+              </button>
+            </Link>
+          </div>
         </div>
         <div className="drop-shadow-2xl">
           <Image
@@ -73,8 +75,8 @@ export default function Home() {
               Practice and refine your skills
             </div>
             <div>
-            The practice cases within the simulator are adapted from real enquiries received by the Customer Correspondence Unit,
-            ensuring you are exposed to authentic scenarios.
+              The practice cases within the simulator are adapted from real enquiries received by the Customer Correspondence Unit,
+              ensuring you are exposed to authentic scenarios.
             </div>
           </div>
 
@@ -89,9 +91,9 @@ export default function Home() {
                 Gain valuable feedback on your performance
               </div>
               <div>
-              Through this immersive training experience,
-              you can identify areas of strength and opportunities for improvement,
-              ultimately enhancing your ability to provide effective and efficient responses to customer enquiries.
+                Through this immersive training experience,
+                you can identify areas of strength and opportunities for improvement,
+                ultimately enhancing your ability to provide effective and efficient responses to customer enquiries.
               </div>
             </div>
           </div>
@@ -99,25 +101,25 @@ export default function Home() {
 
         {/* Schemes */}
         <div className="index-schemes-container">
-              {schemes.map((i) => (
-                <SchemeCard
-                  key={i.scheme_name}
-                  scheme_name={i.scheme_name}
-                  scheme_img={i.scheme_admin_img_path}
-                  questions={i.questions.length}
-                  scheme_button={false}
-                  className="flex flex-col items-center"
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-center">
-           <Link href="/login">
-            <button className="py-2 px-16 border-2 border-dark-green bg-dark-green rounded-lg hover:bg-darker-green text-white">
-              Log in to start!
-            </button>
-            </Link>
-          </div>
+          {schemes.map((i) => (
+            <SchemeCard
+              key={i.scheme_name}
+              scheme_name={i.scheme_name}
+              scheme_img={i.scheme_admin_img_path}
+              questions={i.questions.length}
+              scheme_button={false}
+              className="flex flex-col items-center"
+            />
+          ))}
         </div>
+      </div>
+      <div className="flex justify-center">
+        <Link href="/login">
+          <button className="py-2 px-16 border-2 border-dark-green bg-dark-green rounded-lg hover:bg-darker-green text-white">
+            Log in to start!
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 }

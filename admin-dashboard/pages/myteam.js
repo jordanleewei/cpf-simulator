@@ -16,13 +16,15 @@ import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@
 
 
 export const getServerSideProps = async () => {
+  // Get API URL from environment variables
+  const API_URL = process.env.BACKEND_API_URL;
   // get all team members
-  const res = await fetch("https://d17ygk7qno65io.cloudfront.net/user", { method: "GET" });
+  const res = await fetch(`${process.env.BACKEND_API_URL}/user`, { method: "GET" });
 
   const teamMembers = await res.json();
 
   // get all schemes
-  const res2 = await fetch("https://d17ygk7qno65io.cloudfront.net/distinct/scheme", {
+  const res2 = await fetch(`${process.env.BACKEND_API_URL}/distinct/scheme`, {
     method: "GET",
   });
 
@@ -56,7 +58,7 @@ function MyTeam({ teamMembers, allSchemes }) {
   const [resetPasswordIndex, setResetPasswordIndex] = useState(null);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const accessRights = ["Trainee", "Admin"];
-  
+
   // for filtering
   const [schemeFilter, setSchemeFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -86,7 +88,7 @@ function MyTeam({ teamMembers, allSchemes }) {
 
   const updateTeamMembers = async () => {
     // get all team members
-    const res = await fetch("https://d17ygk7qno65io.cloudfront.net/user", { method: "GET" });
+    const res = await fetch(`${process.env.BACKEND_API_URL}/user`, { method: "GET" });
 
     const teamMembers = await res.json();
 
@@ -140,8 +142,8 @@ function MyTeam({ teamMembers, allSchemes }) {
     setAllTeamMembers(originalTeamMembers);
     setDisplayMembers(originalTeamMembers);
     setEditState(false);
-    setDeleteQueue([]); 
-    setResetPasswordIndex(null); 
+    setDeleteQueue([]);
+    setResetPasswordIndex(null);
   };
 
   const handleChange = (index, field, value) => {
@@ -175,12 +177,12 @@ function MyTeam({ teamMembers, allSchemes }) {
       for (let i = 0; i < allTeamMembers.length; i++) {
         const member = allTeamMembers[i];
         const originalMember = originalTeamMembers[i];
-  
+
         // Log values for debugging
         console.log(`Comparing member ${member.uuid}:`);
         console.log('Current:', member);
         console.log('Original:', originalMember);
-  
+
         // Check if there are any changes
         if (
           member.email !== originalMember.email ||
@@ -190,9 +192,9 @@ function MyTeam({ teamMembers, allSchemes }) {
           JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes)
         ) {
           console.log(`Changes detected for member ${member.uuid}, updating...`);
-          
+
           // Update user details 
-          const userRes = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${member.uuid}`, {
+          const userRes = await fetch(`${process.env.BACKEND_API_URL}/user/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -205,13 +207,13 @@ function MyTeam({ teamMembers, allSchemes }) {
               password: member.password
             }),
           });
-  
+
           if (!userRes.ok) {
             throw new Error("Failed to update member details");
           }
 
           // Update schemes
-          const schemeRes = await fetch(`https://d17ygk7qno65io.cloudfront.net/scheme/${member.uuid}`, {
+          const schemeRes = await fetch(`${process.env.BACKEND_API_URL}/scheme/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -227,7 +229,7 @@ function MyTeam({ teamMembers, allSchemes }) {
 
       // Update delete
       for (const user_id of deleteQueue) {
-        const res = await fetch(`https://d17ygk7qno65io.cloudfront.net/user/${user_id}`, {
+        const res = await fetch(`${process.env.BACKEND_API_URL}/user/${user_id}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
@@ -352,77 +354,77 @@ function MyTeam({ teamMembers, allSchemes }) {
                   )}
                 </td>
                 <td className={tableCellStyle}>
-                {editState && resetPasswordIndex === idx ? (
-                  <>
-                  <div className="flex items-center py-1 ml-2 w-full">
-                    <input
-                      type={isPasswordVisible ? "text" : "password"}
-                      value={i.password}
-                      onChange={(e) => handleChange(idx, "password", e.target.value)}
-                      className="border border-gray-300 p-1"
-                    />
-                    <div className="flex justify-center items-center">
-                      <Button
-                        isIconOnly
-                        className="ml-2"
-                        onClick={handleGeneratePassword}
-                        aria-label="Generate Password"
-                      >
-                        <BiRefresh />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        className="ml-2"
-                        onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                      >
-                        {isPasswordVisible ? <AiFillEyeInvisible /> : <AiFillEye />}
-                      </Button>
+                  {editState && resetPasswordIndex === idx ? (
+                    <>
+                      <div className="flex items-center py-1 ml-2 w-full">
+                        <input
+                          type={isPasswordVisible ? "text" : "password"}
+                          value={i.password}
+                          onChange={(e) => handleChange(idx, "password", e.target.value)}
+                          className="border border-gray-300 p-1"
+                        />
+                        <div className="flex justify-center items-center">
+                          <Button
+                            isIconOnly
+                            className="ml-2"
+                            onClick={handleGeneratePassword}
+                            aria-label="Generate Password"
+                          >
+                            <BiRefresh />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            className="ml-2"
+                            onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                          >
+                            {isPasswordVisible ? <AiFillEyeInvisible /> : <AiFillEye />}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : editState ? (
+                    <button
+                      className="text-white bg-dark-green hover:bg-darker-green px-2 rounded-md"
+                      onClick={() => handlePasswordReset(idx)}
+                    >
+                      Reset Password
+                    </button>
+                  ) : (
+                    "•••••••••••••••"
+                  )}
+                </td>
+                <td className={tableCellStyle}>
+                  {editState ? (
+                    <div className="relative inline-block text-left">
+                      <Dropdown>
+                        <DropdownTrigger placement="bottom-end">
+                          <Button className="flex justify-between items-center w-full border border-gray-300 p-1">
+                            {i.access_rights} <AiFillCaretDown />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          disallowEmptySelection
+                          aria-label="Select access right"
+                          selectionMode="single"
+                          selectedKeys={new Set([i.access_rights])}
+                          onSelectionChange={(keys) => handleChange(idx, "access_rights", keys.anchorKey)}
+                          className="w-full block bg-light-green"
+                        >
+                          {accessRights.map((right) => (
+                            <DropdownItem
+                              className="hover:bg-lighter-green"
+                              key={right}
+                            >
+                              {right}
+                            </DropdownItem>
+                          ))}
+                        </DropdownMenu>
+                      </Dropdown>
                     </div>
-                    </div>
-                  </>
-                ) : editState ? (
-                  <button
-                    className="text-white bg-dark-green hover:bg-darker-green px-2 rounded-md"
-                    onClick={() => handlePasswordReset(idx)}
-                  >
-                    Reset Password
-                  </button>
-                ) : (
-                  "•••••••••••••••"
-                )}
-              </td>
-              <td className={tableCellStyle}>
-  {editState ? (
-    <div className="relative inline-block text-left">
-      <Dropdown>
-        <DropdownTrigger placement="bottom-end">
-          <Button className="flex justify-between items-center w-full border border-gray-300 p-1">
-            {i.access_rights} <AiFillCaretDown />
-          </Button>
-        </DropdownTrigger>
-        <DropdownMenu
-          disallowEmptySelection
-          aria-label="Select access right"
-          selectionMode="single"
-          selectedKeys={new Set([i.access_rights])}
-          onSelectionChange={(keys) => handleChange(idx, "access_rights", keys.anchorKey)}
-          className="w-full block bg-light-green"
-        >
-          {accessRights.map((right) => (
-            <DropdownItem 
-              className="hover:bg-lighter-green"
-              key={right}
-            >
-              {right}
-            </DropdownItem>
-          ))}
-        </DropdownMenu>
-      </Dropdown>
-    </div>
-  ) : (
-    i.access_rights
-  )}
-</td>
+                  ) : (
+                    i.access_rights
+                  )}
+                </td>
                 <td className={tableCellStyle}>
                   <SchemeTags
                     schemes={i.schemes}
@@ -435,7 +437,7 @@ function MyTeam({ teamMembers, allSchemes }) {
                     }
                   />
                 </td>
-                <td> 
+                <td>
                   {editState && (
                     <button className="flex items-center">
                       <FaRegTrashCan

@@ -17,14 +17,14 @@ import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@
 
 export const getServerSideProps = async () => {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   // get all team members
-  const res = await fetch(`${process.env.BACKEND_API_URL}/user`, { method: "GET" });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user`, { method: "GET" });
 
   const teamMembers = await res.json();
 
   // get all schemes
-  const res2 = await fetch(`${process.env.BACKEND_API_URL}/distinct/scheme`, {
+  const res2 = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/distinct/scheme`, {
     method: "GET",
   });
 
@@ -88,7 +88,7 @@ function MyTeam({ teamMembers, allSchemes }) {
 
   const updateTeamMembers = async () => {
     // get all team members
-    const res = await fetch(`${process.env.BACKEND_API_URL}/user`, { method: "GET" });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user`, { method: "GET" });
 
     const teamMembers = await res.json();
 
@@ -194,7 +194,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           console.log(`Changes detected for member ${member.uuid}, updating...`);
 
           // Update user details 
-          const userRes = await fetch(`${process.env.BACKEND_API_URL}/user/${member.uuid}`, {
+          const userRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -213,7 +213,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           }
 
           // Update schemes
-          const schemeRes = await fetch(`${process.env.BACKEND_API_URL}/scheme/${member.uuid}`, {
+          const schemeRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -229,7 +229,7 @@ function MyTeam({ teamMembers, allSchemes }) {
 
       // Update delete
       for (const user_id of deleteQueue) {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/user/${user_id}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${user_id}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",

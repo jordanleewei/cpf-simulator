@@ -8,7 +8,7 @@ import DeleteModal from "../components/DeleteModal";
 
 function Schemes() {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [schemes, setSchemes] = useState([]);
   const [editState, setEditState] = useState(false);
   const [deletedSchemes, setDeletedSchemes] = useState([]);
@@ -20,7 +20,7 @@ function Schemes() {
   useEffect(() => {
     async function getSchemes() {
       try {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/scheme`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme`);
         const schemeData = await res.json();
 
         // Format scheme names to capitalized format
@@ -62,7 +62,7 @@ function Schemes() {
     try {
       // Delete schemes from the backend
       for (const schemeName of deletedSchemes) {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/scheme/${schemeName}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme/${schemeName}`, {
           method: "DELETE",
         });
         if (!res.ok) {

@@ -8,7 +8,7 @@ export default function AverageScores({ user }) {
   const [pieSelect, setPieSelect] = useState("All");
   const [pieContent, setPieContent] = useState([]);
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
 
   useEffect(() => {

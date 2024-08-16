@@ -10,12 +10,12 @@ function AddScheme() {
   const [selectedImage, setSelectedImage] = useState("");
   const [imageUrls, setImageUrls] = useState([]);
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
   useEffect(() => {
     async function fetchImageUrls() {
       try {
-        const response = await fetch(`${process.env.BACKEND_API_URL}/s3-images`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/s3-images`);
         const data = await response.json();
         if (Array.isArray(data.image_urls)) {
           setImageUrls(data.image_urls);
@@ -44,7 +44,7 @@ function AddScheme() {
       const standardizedSchemeName = capitalize(schemeName);
 
       const response = await fetch(
-        `${process.env.BACKEND_API_URL}/scheme?scheme_name=${encodeURIComponent(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme?scheme_name=${encodeURIComponent(
           standardizedSchemeName
         )}&file_url=${encodeURIComponent(selectedImage)}`,
         {

@@ -14,12 +14,12 @@ function Profile({ user }) {
   const [subCat, setSubCat] = useState([]);
   const [userName, setUserName] = useState("");
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/user/${user.uuid}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${user.uuid}`);
         const userData = await res.json();
         if (res.ok) {
           setUserName(userData.name);
@@ -37,7 +37,7 @@ function Profile({ user }) {
   useEffect(() => {
     async function getAttempts() {
       try {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/attempt/user/${user.uuid}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/attempt/user/${user.uuid}`);
         const attemptRes = await res.json();
         if (res.ok) {
           setAttempts(attemptRes.reverse());
@@ -49,7 +49,7 @@ function Profile({ user }) {
 
     async function getSubCat() {
       try {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/user/${user.uuid}/schemes`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${user.uuid}/schemes`);
         const subCatData = await res.json();
         if (res.ok) {
           setSubCat(subCatData);

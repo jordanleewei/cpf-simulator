@@ -6,14 +6,14 @@ import isAuth from "../components/isAuth";
 
 function Schemes({ user }) {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [schemes, setSchemes] = useState([]);
 
   useEffect(() => {
     async function getSchemes() {
       if (user) {
         try {
-          const res = await fetch(`${process.env.BACKEND_API_URL}/scheme/${user.uuid}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme/${user.uuid}`);
           const schemeData = await res.json();
 
           // Transform scheme names

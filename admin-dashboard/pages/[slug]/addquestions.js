@@ -15,7 +15,7 @@ import isAuth from '../../components/isAuth';
 
 function AddQuestions() {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -30,7 +30,7 @@ function AddQuestions() {
 
   const defaultSystems = async () => {
     try {
-      const res = await fetch(`${process.env.BACKEND_API_URL}/default-systems`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/default-systems`);
       if (!res.ok) {
         throw new Error("Failed to fetch default system names and urls");
       }
@@ -66,7 +66,7 @@ function AddQuestions() {
     idealSystemUrls
   ) {
     try {
-      const response = await fetch(`${process.env.BACKEND_API_URL}/question`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/question`, {
         method: "POST",
         body: JSON.stringify({
           title: title,

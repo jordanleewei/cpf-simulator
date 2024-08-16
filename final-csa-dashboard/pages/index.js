@@ -15,12 +15,12 @@ import SchemeCard from "../components/SchemeCard";
 export default function Home() {
   const [schemes, setSchemes] = useState([]);
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
   useEffect(() => {
     async function getSchemes() {
       try {
-        const res = await fetch(`${process.env.BACKEND_API_URL}/scheme`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme`);
 
         const schemeData = await res.json();
         setSchemes(schemeData);

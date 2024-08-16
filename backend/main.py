@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, status, HTTPException, responses, File, UploadFile
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm  import Session, joinedload
 from sqlalchemy import select, distinct, desc
 from models.user import UserModel
@@ -50,6 +51,10 @@ AWS_REGION_NAME = os.getenv("AWS_REGION_NAME")
 s3_client = boto3.client('s3')
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@app.get("/", include_in_schema=False)  # Exclude this endpoint from the automatic docs
+async def redirect_to_docs():
+    return RedirectResponse(url="/docs")
 
 # Add default systems
 @app.get("/default-systems", status_code=200)

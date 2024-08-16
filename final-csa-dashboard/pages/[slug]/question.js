@@ -8,7 +8,7 @@ import { IoIosArrowBack, IoMdAdd, IoMdRemove } from "react-icons/io";
 
 function Question({ user }) {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
   const { scheme_name } = router.query;
   const [question, setQuestion] = useState([]);
@@ -22,7 +22,7 @@ function Question({ user }) {
       if (router.isReady) {
         try {
           const res = await fetch(
-            `${process.env.BACKEND_API_URL}/question/${router.query.slug}`
+            `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/question/${router.query.slug}`
           );
           if (!res.ok) {
             throw new Error("Failed to fetch data");
@@ -61,7 +61,7 @@ function Question({ user }) {
     setSubmit(true);
     const systemName = systems.map(system => system.name).join(", ");
     const systemUrl = systems.map(system => system.url).join(", ");
-    const res = await fetch(`${process.env.BACKEND_API_URL}/attempt`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/attempt`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

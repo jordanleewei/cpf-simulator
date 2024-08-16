@@ -4,7 +4,7 @@ import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
 export default function Login({ setUser }) {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -21,7 +21,7 @@ export default function Login({ setUser }) {
     event.preventDefault();
 
     try {
-      const res = await fetch(`${process.env.BACKEND_API_URL}/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

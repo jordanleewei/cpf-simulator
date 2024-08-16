@@ -7,7 +7,7 @@ import BackBar from "../../components/BackBar";
 
 function Question() {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
   const [question, setQuestion] = useState({});
 
@@ -16,7 +16,7 @@ function Question() {
       if (router.isReady) {
         try {
           const res = await fetch(
-            `${process.env.BACKEND_API_URL}/question/${router.query.slug}`
+            `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/question/${router.query.slug}`
           );
           if (!res.ok) {
             throw new Error("Failed to fetch data");

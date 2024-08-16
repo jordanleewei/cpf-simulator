@@ -16,7 +16,7 @@ function Exercises() {
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
   useEffect(() => {
     async function getQuestions() {
@@ -24,7 +24,7 @@ function Exercises() {
         const scheme_name = router.query.slug;
         window.localStorage.setItem("schemeName", scheme_name);
         const res = await fetch(
-          `${process.env.BACKEND_API_URL}/questions/scheme/${scheme_name}`
+          `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/questions/scheme/${scheme_name}`
         );
         const questions = await res.json();
         setAllQuestions(questions);
@@ -57,7 +57,7 @@ function Exercises() {
 
   const handleDelete = (question_id) => {
     try {
-      const res = fetch(`${process.env.BACKEND_API_URL}/question/${question_id}`, {
+      const res = fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/question/${question_id}`, {
         method: "DELETE",
       });
       setAllQuestions(allQuestions.filter((i) => i.question_id != question_id));

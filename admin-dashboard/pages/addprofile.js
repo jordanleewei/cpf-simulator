@@ -18,7 +18,7 @@ import { BiRefresh } from "react-icons/bi";
 import isAuth from "../components/isAuth";
 
 function AddProfile() {
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
 
   // State variables

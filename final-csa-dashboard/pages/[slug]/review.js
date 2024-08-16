@@ -11,7 +11,7 @@ import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
 function ReviewPage({ user }) {
   // Get API URL from environment variables
-  const API_URL = process.env.BACKEND_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
   const review = router.query.review === "true";
   const submit = router.query.submit === "true";
@@ -27,7 +27,7 @@ function ReviewPage({ user }) {
     async function getAttempt() {
       if (router.isReady) {
         const attempt_id = router.query.slug;
-        const res = await fetch(`${process.env.BACKEND_API_URL}/attempt/${attempt_id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/attempt/${attempt_id}`);
 
         const attemptData = await res.json();
         console.log("attempt", attemptData);

@@ -9,7 +9,8 @@ export default function Login({ setUser }) {
   const [notification, setNotification] = useState("");
 
   const router = useRouter();
-  const API_URL = process.env.BACKEND_API_URL; // Fetch the API URL from the environment variable
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL; // Fetch the API URL from the environment variable
+  console.log('API_URL:', API_URL); // Debugging to check if the value is correct
 
   function handleNotification(noti) {
     setNotification(noti);

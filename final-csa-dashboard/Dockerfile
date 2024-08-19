@@ -11,6 +11,9 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY . .
 
+# Set public env variable
+ENV NEXT_PUBLIC_BACKEND_API_URL=https://backendapi.ccutrainingsimulator.com
+
 # Expose the port that the application will run on
 EXPOSE 3000
 

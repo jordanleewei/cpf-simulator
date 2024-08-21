@@ -13,16 +13,25 @@ function Profile({ user }) {
   const [attempts, setAttempts] = useState([]);
   const [subCat, setSubCat] = useState([]);
   const [userName, setUserName] = useState("");
-  // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+  const getAuthHeaders = () => {
+    const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+    const token = loggedUser ? loggedUser.access_token : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${user.uuid}`);
-        const userData = await res.json();
+        const res = await fetch(`${API_URL}/user/${user.uuid}`, {
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
+          const userData = await res.json();
           setUserName(userData.name);
+        } else {
+          console.error("Failed to fetch user data:", res.status);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -37,10 +46,20 @@ function Profile({ user }) {
   useEffect(() => {
     async function getAttempts() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/attempt/user/${user.uuid}`);
-        const attemptRes = await res.json();
+        const res = await fetch(`${API_URL}/attempt/user/${user.uuid}`, {
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
-          setAttempts(attemptRes.reverse());
+          const attemptRes = await res.json();
+          // Before setting attempts state
+          if (Array.isArray(attemptRes)) {
+            setAttempts(attemptRes.reverse());
+          } else {
+            console.error("Invalid attempts data:", attemptRes);
+          }
+
+        } else {
+          console.error("Failed to fetch attempts:", res.status);
         }
       } catch (error) {
         console.error("Error fetching attempts:", error);
@@ -49,10 +68,14 @@ function Profile({ user }) {
 
     async function getSubCat() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${user.uuid}/schemes`);
-        const subCatData = await res.json();
+        const res = await fetch(`${API_URL}/user/${user.uuid}/schemes`, {
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
+          const subCatData = await res.json();
           setSubCat(subCatData);
+        } else {
+          console.error("Failed to fetch subcategories:", res.status);
         }
       } catch (error) {
         console.error("Error fetching subcategories:", error);
@@ -102,7 +125,6 @@ function Profile({ user }) {
       `${(attempt.tone_score / 5) * 100}%`,
     ]);
 
-    // Combine headers and rows
     const csvContent = [headers.join(",")];
     rows.forEach((row) => {
       csvContent.push(row.join(","));
@@ -163,7 +185,6 @@ function Profile({ user }) {
         </div>
       </div>
     </div>
-
   );
 }
 

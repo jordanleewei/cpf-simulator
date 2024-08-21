@@ -1,8 +1,6 @@
-// framework
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-// images and icons
+// icons
 import { ChevronLeft } from "@mui/icons-material";
 import { FaRegTrashCan } from "react-icons/fa6";
 // components
@@ -23,12 +21,23 @@ function Exercises() {
       if (router.isReady) {
         const scheme_name = router.query.slug;
         window.localStorage.setItem("schemeName", scheme_name);
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/questions/scheme/${scheme_name}`
-        );
-        const questions = await res.json();
-        setAllQuestions(questions);
-        setName(scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1));
+
+        try {
+          const res = await fetch(
+            `${API_URL}/questions/scheme/${scheme_name}`
+          );
+          const questions = await res.json();
+
+          // Ensure questions is always an array
+          setAllQuestions(Array.isArray(questions) ? questions : []);
+
+          setName(
+            scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1)
+          );
+        } catch (error) {
+          console.error("Failed to fetch questions:", error);
+          setAllQuestions([]); // Fallback to empty array
+        }
       }
     }
 
@@ -51,16 +60,16 @@ function Exercises() {
   }
 
   function handleAddQuestion() {
-    var pagename = name.toLowerCase();
+    const pagename = name.toLowerCase();
     router.push(`/${pagename}/addquestions`, undefined, { shallow: true });
   }
 
-  const handleDelete = (question_id) => {
+  const handleDelete = async (question_id) => {
     try {
-      const res = fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/question/${question_id}`, {
+      await fetch(`${API_URL}/question/${question_id}`, {
         method: "DELETE",
       });
-      setAllQuestions(allQuestions.filter((i) => i.question_id != question_id));
+      setAllQuestions(allQuestions.filter((i) => i.question_id !== question_id));
       setDeleteId("");
     } catch (e) {
       console.log(e);
@@ -70,7 +79,7 @@ function Exercises() {
   const tableCellStyle = `text-start py-6 border px-5`;
   const tableCenterCellStyle = `text-center py-6 border`;
 
-  const getdifficultyColor = (difficulty) => {
+  const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Easy":
         return "text-green-500";
@@ -97,15 +106,13 @@ function Exercises() {
         </div>
       </button>
       {/* for delete modal */}
-      {deleteId == "" ? null : (
+      {deleteId && (
         <div className="w-full h-full flex justify-center items-center fixed -top-0.5">
           <DeleteModal
             id={deleteId}
             setId={setDeleteId}
             text={
-              allQuestions
-                .filter((q) => q.question_id == deleteId)
-                .map((i) => i.title)[0]
+              allQuestions.find((q) => q.question_id === deleteId)?.title || "Question"
             }
             handleDelete={handleDelete}
             className=" justify-self-center place-items-center"
@@ -162,37 +169,45 @@ function Exercises() {
             </thead>
 
             <tbody>
-              {allQuestions.map((question, index) => (
-                <tr
-                  key={index + 1}
-                  className="hover:bg-light-gray hover:cursor-pointer"
-                >
-                  <td
-                    className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
-                    onClick={() => handleQuestionNav(question.question_id)}
-                  >{`${index + 1}. ${question.title}`}</td>
-                  <td
-                    className={`${tableCenterCellStyle} ${getdifficultyColor(
-                      question.question_difficulty
-                    )}`}
+              {allQuestions.length > 0 ? (
+                allQuestions.map((question, index) => (
+                  <tr
+                    key={index + 1}
+                    className="hover:bg-light-gray hover:cursor-pointer"
                   >
-                    {question.question_difficulty}
-                  </td>
-                  <td className={`${tableCenterCellStyle}`}>
-                    {question.scheme_name}
-                  </td>
-                  <td>
-                    {editState ? (
-                      <button className="flex items-center">
-                        <FaRegTrashCan
-                          className=" text-red-500 ml-0.5"
-                          onClick={() => setDeleteId(question.question_id)}
-                        />
-                      </button>
-                    ) : null}
+                    <td
+                      className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
+                      onClick={() => handleQuestionNav(question.question_id)}
+                    >{`${index + 1}. ${question.title}`}</td>
+                    <td
+                      className={`${tableCenterCellStyle} ${getDifficultyColor(
+                        question.question_difficulty
+                      )}`}
+                    >
+                      {question.question_difficulty}
+                    </td>
+                    <td className={`${tableCenterCellStyle}`}>
+                      {question.scheme_name}
+                    </td>
+                    <td>
+                      {editState && (
+                        <button className="flex items-center">
+                          <FaRegTrashCan
+                            className=" text-red-500 ml-0.5"
+                            onClick={() => setDeleteId(question.question_id)}
+                          />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="text-center py-4">
+                    No questions found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

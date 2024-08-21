@@ -17,5 +17,7 @@ class UserResponseSchema(BaseModel):
     name: str
     access_rights: str
     schemes: List[str]
+    class Config:
+        from_attributes = True
 
 

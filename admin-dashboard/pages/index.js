@@ -1,3 +1,4 @@
+// admin-dashboard/pages/index.js
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
@@ -9,8 +10,7 @@ export default function Login({ setUser }) {
   const [notification, setNotification] = useState("");
 
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL; // Fetch the API URL from the environment variable
-  console.log('API_URL:', API_URL); // Debugging to check if the value is correct
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL; 
 
   function handleNotification(noti) {
     setNotification(noti);
@@ -19,23 +19,26 @@ export default function Login({ setUser }) {
 
   async function onSubmit(event) {
     event.preventDefault();
-
+  
     try {
-      const res = await fetch(`${API_URL}/login`, {
+      const res = await fetch(`${API_URL}/token`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: JSON.stringify({ email: email, password: password }),
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }),
       });
-
+  
       if (!res.ok) {
         handleNotification("Invalid email or password");
         return;
       }
-
+  
       const data = await res.json();
-      if (data.access_rights !== "Admin") {
+      if (data.access_rights.toLowerCase() !== "admin") {
         handleNotification("User does not have admin access");
       } else {
         window.localStorage.setItem("loggedUser", JSON.stringify(data));
@@ -47,6 +50,7 @@ export default function Login({ setUser }) {
       handleNotification("An error occurred. Please try again.");
     }
   }
+  
 
   return (
     <div className="login-component">

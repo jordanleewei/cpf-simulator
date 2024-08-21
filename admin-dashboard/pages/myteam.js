@@ -1,110 +1,119 @@
-// framework
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-//components
 import SchemeTags from "../components/SchemeTags";
 import SchemeFilter from "../components/SchemeFilter";
 import SearchBar from "../components/SearchBar";
-import isAuth from "../components/isAuth";
-// icons
 import { AiFillCaretDown, AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { FaRegTrashCan } from "react-icons/fa6";
 import DeleteModal from "../components/DeleteModal";
 import { BiRefresh } from "react-icons/bi";
-// nextui components
 import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@nextui-org/react";
 
-
-export const getServerSideProps = async () => {
-  // Get API URL from environment variables
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-  // get all team members
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user`, { method: "GET" });
-
-  const teamMembers = await res.json();
-
-  // get all schemes
-  const res2 = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/distinct/scheme`, {
-    method: "GET",
-  });
-
-  let allSchemes = await res2.json();
-  if (!Array.isArray(allSchemes)) {
-    allSchemes = [];
-  } else {
-    allSchemes = allSchemes.map((scheme) =>
-      scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
-    );
-  }
-
-  return { props: { teamMembers, allSchemes } };
-};
-
-function MyTeam({ teamMembers, allSchemes }) {
-  const router = useRouter();
-
-  // styles
-  const tableCellStyle = `text-start py-2 px-3 border`;
-  const scrollableCellStyle = `text-start py-2 px-3 border max-w-[300px] overflow-x-auto`;
-
-  // states
-  const [allTeamMembers, setAllTeamMembers] = useState(teamMembers);
-  const [originalTeamMembers, setOriginalTeamMembers] = useState(teamMembers);
-  const [displayMembers, setDisplayMembers] = useState(teamMembers);
+function MyTeam() {
+  const [allTeamMembers, setAllTeamMembers] = useState([]);
+  const [originalTeamMembers, setOriginalTeamMembers] = useState([]);
+  const [displayMembers, setDisplayMembers] = useState([]);
+  const [allSchemes, setAllSchemes] = useState([]);
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [deleteQueue, setDeleteQueue] = useState([]);
   const [password, setPassword] = useState("");
   const [resetPasswordIndex, setResetPasswordIndex] = useState(null);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const accessRights = ["Trainee", "Admin"];
-
-  // for filtering
   const [schemeFilter, setSchemeFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const router = useRouter();
+  const accessRights = ["Trainee", "Admin"];
 
-  // for filtering
   useEffect(() => {
-    if (schemeFilter === "All") {
-      setDisplayMembers(allTeamMembers);
-    } else {
-      setDisplayMembers(
-        allTeamMembers.filter((member) => member.schemes.includes(schemeFilter))
+    const fetchData = async () => {
+      const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+      
+      // Retrieve the token from localStorage
+      const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+      const token = loggedUser ? loggedUser.access_token : null;
+
+      if (!token) {
+        console.log("No token found, redirecting to home.");
+        router.push('/');
+        return;
+      }
+
+      try {
+        // Fetch team members
+        const res = await fetch(`${API_URL}/user`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const teamMembers = await res.json();
+          setAllTeamMembers(teamMembers);
+          setOriginalTeamMembers(teamMembers);
+          setDisplayMembers(teamMembers);
+        } else {
+          console.log("Authorization failed:", res.status);
+          router.push('/');
+          return;
+        }
+
+        // Fetch schemes
+        const res2 = await fetch(`${API_URL}/distinct/scheme`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (res2.ok) {
+          const schemes = await res2.json();
+          const formattedSchemes = Array.isArray(schemes)
+            ? schemes.map(
+                (scheme) =>
+                  scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
+              )
+            : [];
+          setAllSchemes(formattedSchemes);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        router.push('/');
+      }
+    };
+
+    fetchData();
+  }, [router]);
+
+  useEffect(() => {
+    let filteredMembers = allTeamMembers;
+
+    if (schemeFilter !== "All") {
+      filteredMembers = filteredMembers.filter((member) =>
+        member.schemes.includes(schemeFilter)
       );
     }
 
     if (search !== "") {
-      setDisplayMembers((prevDisplayMembers) =>
-        prevDisplayMembers.filter(
-          (member) =>
-            member.name.toLowerCase().includes(search) ||
-            member.email.toLowerCase().includes(search)
-        )
+      filteredMembers = filteredMembers.filter(
+        (member) =>
+          member.name.toLowerCase().includes(search) ||
+          member.email.toLowerCase().includes(search)
       );
-    } else {
-      setDisplayMembers((prevDisplayMembers) => prevDisplayMembers);
     }
-  }, [schemeFilter, search]);
 
-  const updateTeamMembers = async () => {
-    // get all team members
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user`, { method: "GET" });
-
-    const teamMembers = await res.json();
-
-    setAllTeamMembers(teamMembers);
-    setOriginalTeamMembers(teamMembers);
-  };
+    setDisplayMembers(filteredMembers);
+  }, [schemeFilter, search, allTeamMembers]);
 
   const handlePasswordReset = (index) => {
     setResetPasswordIndex(index);
   };
 
-  // Function to generate a random password
   const generatePassword = () => {
-    const length = 15; // Set the length of the generated password
+    const length = 15;
     const charset =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}|<>?"; // Characters to include
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}|<>?";
     let result = "";
     for (let i = 0; i < length; i++) {
       const randomIndex = Math.floor(Math.random() * charset.length);
@@ -113,7 +122,6 @@ function MyTeam({ teamMembers, allSchemes }) {
     return result;
   };
 
-  // Function to handle generating a new password
   const handleGeneratePassword = () => {
     const newPassword = generatePassword();
     setPassword(newPassword);
@@ -121,16 +129,13 @@ function MyTeam({ teamMembers, allSchemes }) {
   };
 
   const handleDelete = (user_id) => {
-    // Queue the user_id for deletion
     setDeleteQueue((prevQueue) => [...prevQueue, user_id]);
-    // Update frontend state immediately
     setAllTeamMembers((prevMembers) =>
       prevMembers.filter((member) => member.uuid !== user_id)
     );
     setDisplayMembers((prevMembers) =>
       prevMembers.filter((member) => member.uuid !== user_id)
     );
-    // Close modal
     setDeleteId("");
   };
 
@@ -173,17 +178,13 @@ function MyTeam({ teamMembers, allSchemes }) {
   };
 
   const handleSave = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
     try {
       for (let i = 0; i < allTeamMembers.length; i++) {
         const member = allTeamMembers[i];
         const originalMember = originalTeamMembers[i];
 
-        // Log values for debugging
-        console.log(`Comparing member ${member.uuid}:`);
-        console.log('Current:', member);
-        console.log('Original:', originalMember);
-
-        // Check if there are any changes
         if (
           member.email !== originalMember.email ||
           member.name !== originalMember.name ||
@@ -191,10 +192,7 @@ function MyTeam({ teamMembers, allSchemes }) {
           member.password !== originalMember.password ||
           JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes)
         ) {
-          console.log(`Changes detected for member ${member.uuid}, updating...`);
-
-          // Update user details 
-          const userRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${member.uuid}`, {
+          const userRes = await fetch(`${API_URL}/user/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -212,8 +210,7 @@ function MyTeam({ teamMembers, allSchemes }) {
             throw new Error("Failed to update member details");
           }
 
-          // Update schemes
-          const schemeRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme/${member.uuid}`, {
+          const schemeRes = await fetch(`${API_URL}/scheme/${member.uuid}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -227,9 +224,8 @@ function MyTeam({ teamMembers, allSchemes }) {
         }
       }
 
-      // Update delete
       for (const user_id of deleteQueue) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/${user_id}`, {
+        const res = await fetch(`${API_URL}/user/${user_id}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
@@ -313,18 +309,18 @@ function MyTeam({ teamMembers, allSchemes }) {
         <table className="w-full table-auto border border-collapse border-slate-200 mt-2">
           <thead>
             <tr>
-              <th className={`${scrollableCellStyle} bg-dark-grey`}>Name</th>
-              <th className={`${scrollableCellStyle} bg-dark-grey`}>Email</th>
-              <th className={`${tableCellStyle} bg-dark-grey`}>Password</th>
-              <th className={`${tableCellStyle} bg-dark-grey w-1/6`}>Access</th>
-              <th className={`${tableCellStyle} bg-dark-grey w-1/3`}>Schemes</th>
+              <th className="text-start py-2 px-3 border">Name</th>
+              <th className="text-start py-2 px-3 border">Email</th>
+              <th className="text-start py-2 px-3 border">Password</th>
+              <th className="text-start py-2 px-3 border w-1/6">Access</th>
+              <th className="text-start py-2 px-3 border w-1/3">Schemes</th>
               <th className="w-[0px] p-0" />
             </tr>
           </thead>
           <tbody>
             {displayMembers.map((i, idx) => (
               <tr className="hover:bg-light-gray hover:cursor-pointer" key={idx}>
-                <td className={scrollableCellStyle}>
+                <td className="text-start py-2 px-3 border">
                   {editState ? (
                     <input
                       type="text"
@@ -341,7 +337,7 @@ function MyTeam({ teamMembers, allSchemes }) {
                     </span>
                   )}
                 </td>
-                <td className={scrollableCellStyle}>
+                <td className="text-start py-2 px-3 border">
                   {editState ? (
                     <input
                       type="email"
@@ -353,7 +349,7 @@ function MyTeam({ teamMembers, allSchemes }) {
                     i.email
                   )}
                 </td>
-                <td className={tableCellStyle}>
+                <td className="text-start py-2 px-3 border">
                   {editState && resetPasswordIndex === idx ? (
                     <>
                       <div className="flex items-center py-1 ml-2 w-full">
@@ -393,7 +389,7 @@ function MyTeam({ teamMembers, allSchemes }) {
                     "•••••••••••••••"
                   )}
                 </td>
-                <td className={tableCellStyle}>
+                <td className="text-start py-2 px-3 border">
                   {editState ? (
                     <div className="relative inline-block text-left">
                       <Dropdown>
@@ -425,12 +421,12 @@ function MyTeam({ teamMembers, allSchemes }) {
                     i.access_rights
                   )}
                 </td>
-                <td className={tableCellStyle}>
+                <td className="text-start py-2 px-3 border">
                   <SchemeTags
                     schemes={i.schemes}
                     allSchemes={allSchemes}
                     user_id={i.uuid}
-                    updateTeamMembers={updateTeamMembers}
+                    updateTeamMembers={() => {}}
                     editState={editState}
                     onChangeSchemes={(updatedSchemes) =>
                       handleSchemeChange(idx, updatedSchemes)
@@ -456,4 +452,4 @@ function MyTeam({ teamMembers, allSchemes }) {
   );
 }
 
-export default isAuth(MyTeam);
+export default MyTeam;

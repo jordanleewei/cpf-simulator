@@ -1,4 +1,4 @@
-fastapi==0.104.1
+fastapi
 cryptography
 
 # for ML portion
@@ -7,7 +7,7 @@ transformers
 openai
 sentence-transformers
 langchain==0.1.14
-langchain-community==0.0.30
+langchain-community
 chromadb==0.4.15
 pymysql
 pydantic_settings
@@ -19,3 +19,5 @@ boto3
 passlib
 fuzzywuzzy
 python-Levenshtein
+pyjwt
+python-jose

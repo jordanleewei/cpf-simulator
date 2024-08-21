@@ -59,7 +59,7 @@ export default function TableCustomized({ rows, user_id }) {
           ).map((row, idx) => (
             <tr key={idx}>
               <td>{row.question_title}</td>
-              <td>{row.scheme_name}</td>
+              <td>{row.scheme_name.scheme_name}</td>
               <td align="right">{row.date}</td>
               <td
                 align="right"

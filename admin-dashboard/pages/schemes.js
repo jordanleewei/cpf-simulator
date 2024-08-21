@@ -1,4 +1,3 @@
-// framework
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 // components
@@ -14,19 +13,22 @@ function Schemes() {
   const [deletedSchemes, setDeletedSchemes] = useState([]);
   const [deleteId, setDeleteId] = useState("");
   const [originalSchemes, setOriginalSchemes] = useState([]);
+  const [csvFile, setCsvFile] = useState(null);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   const router = useRouter();
 
   useEffect(() => {
     async function getSchemes() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme`);
+        const res = await fetch(`${API_URL}/scheme`);
         const schemeData = await res.json();
 
-        // Format scheme names to capitalized format
+        // Format scheme names to capitalized format and ensure questions is an array
         const formattedSchemes = schemeData.map(scheme => ({
           ...scheme,
-          scheme_name: scheme.scheme_name.charAt(0).toUpperCase() + scheme.scheme_name.slice(1).toLowerCase()
+          scheme_name: scheme.scheme_name.charAt(0).toUpperCase() + scheme.scheme_name.slice(1).toLowerCase(),
+          questions: Array.isArray(scheme.questions) ? scheme.questions : [] // Ensure questions is an array
         }));
 
         setSchemes(formattedSchemes);
@@ -38,6 +40,41 @@ function Schemes() {
 
     getSchemes();
   }, []);
+
+  // Function to handle CSV file selection
+  const handleFileChange = (event) => {
+    setCsvFile(event.target.files[0]);
+  };
+
+  // Function to handle CSV file upload
+  const handleFileUpload = async () => {
+    if (!csvFile) {
+      setUploadMessage("Please select a CSV file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", csvFile);
+
+    try {
+      const res = await fetch(`${API_URL}/upload-questions-csv`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        setUploadMessage("CSV uploaded successfully.");
+        setCsvFile(null); // Clear the file input after upload
+        // Optionally, refresh schemes data after upload
+        getSchemes();
+      } else {
+        setUploadMessage("Failed to upload CSV. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error uploading CSV:", error);
+      setUploadMessage("An error occurred during upload.");
+    }
+  };
 
   // Function to delete a scheme from frontend only
   const handleDelete = (schemeName) => {
@@ -62,7 +99,7 @@ function Schemes() {
     try {
       // Delete schemes from the backend
       for (const schemeName of deletedSchemes) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme/${schemeName}`, {
+        const res = await fetch(`${API_URL}/scheme/${schemeName}`, {
           method: "DELETE",
         });
         if (!res.ok) {
@@ -117,6 +154,19 @@ function Schemes() {
           </div>
         )}
       </div>
+      
+      {/* CSV Upload Section */}
+      <div className="my-4">
+        <input type="file" accept=".csv" onChange={handleFileChange} />
+        <button
+          className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4 ml-3"
+          onClick={handleFileUpload}
+        >
+          Upload Questions CSV
+        </button>
+        {uploadMessage && <p className="mt-2 text-red-500">{uploadMessage}</p>}
+      </div>
+      
       <div className="schemes-container">
         {schemes.length > 0 ? (
           schemes.map((scheme) => (
@@ -124,7 +174,7 @@ function Schemes() {
               key={scheme.scheme_name}
               scheme_name={scheme.scheme_name}
               scheme_img={scheme.scheme_admin_img_path}
-              questions={scheme.questions.length}
+              questions={scheme.questions.length}  // Safely access the questions length
               scheme_button={true}
               editState={editState}
               schemes={schemes}

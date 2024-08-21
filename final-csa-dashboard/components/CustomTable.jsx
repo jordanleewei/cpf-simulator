@@ -33,9 +33,9 @@ export default function TableCustomized({ rows }) {
     router.push(
       {
         pathname: `/${review_id}/review`,
-        query: { 
-          review: true, 
-          submit: false, 
+        query: {
+          review: true,
+          submit: false,
           profile: true,
         },
       },
@@ -45,6 +45,27 @@ export default function TableCustomized({ rows }) {
       }
     );
   }
+  {
+    rows.map((row, idx) => {
+
+      return (
+        <tr key={idx}>
+          <td>{row.question_title}</td>
+          <td>{row.scheme_name.scheme_name}</td> {/* Extract the scheme name from the object */}
+          <td>{row.date}</td>
+          <td
+            align="right"
+            className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
+            onClick={() => handleReviewNav(row.attempt_id)}
+          >
+            Click to view attempt
+          </td>
+        </tr>
+
+      );
+    })
+  }
+
 
   return (
     <Root sx={{ maxWidth: "100%", width: "100%", }}>
@@ -64,7 +85,7 @@ export default function TableCustomized({ rows }) {
           ).map((row, idx) => (
             <tr key={idx}>
               <td>{row.question_title}</td>
-              <td>{row.scheme_name}</td>
+              <td>{row.scheme_name.scheme_name}</td>
               <td align="right">{row.date}</td>
               <td
                 align="right"
@@ -198,9 +219,8 @@ const CustomTablePagination = styled(TablePagination)(
     }
 
     &:focus {
-      outline: 3px solid ${
-        theme.palette.mode === "dark" ? blue[400] : blue[200]
-      };
+      outline: 3px solid ${theme.palette.mode === "dark" ? blue[400] : blue[200]
+    };
       border-color: ${blue[400]};
     }
   }
@@ -241,18 +261,16 @@ const CustomTablePagination = styled(TablePagination)(
     }
 
     &:focus {
-      outline: 3px solid ${
-        theme.palette.mode === "dark" ? blue[400] : blue[200]
-      };
+      outline: 3px solid ${theme.palette.mode === "dark" ? blue[400] : blue[200]
+    };
       border-color: ${blue[400]};
     }
 
     &:disabled {
       opacity: 0.3;
       &:hover {
-        border: 1px solid ${
-          theme.palette.mode === "dark" ? grey[800] : grey[200]
-        };
+        border: 1px solid ${theme.palette.mode === "dark" ? grey[800] : grey[200]
+    };
         background-color: transparent;
       }
     }

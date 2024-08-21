@@ -21,12 +21,15 @@ export default function Login({ setUser }) {
     event.preventDefault();
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/login`, {
+      const res = await fetch(`${API_URL}/token`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: JSON.stringify({ email: email, password: password }),
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }),
       });
 
       if (!res.ok) {

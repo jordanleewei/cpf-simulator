@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", message=".*error reading bcrypt version.*")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*`clean_up_tokenization_spaces`.*")
 import logging
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request, Form, Response
 from fastapi.responses import RedirectResponse

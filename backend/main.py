@@ -183,13 +183,12 @@ async def upload_questions_csv(
         combined_system_names = ", ".join([name for name, _ in ideal_system_urls if pd.notna(name)])
         combined_system_urls = ", ".join([url for _, url in ideal_system_urls if pd.notna(url)])
 
-        # Check if the scheme exists, if not create it
+        # Check if the scheme exists, if not create it using the add_new_scheme function
         scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
         if not scheme:
-            new_scheme = SchemeModel(scheme_name=scheme_name)
-            db.add(new_scheme)
-            db.commit()
-            scheme = new_scheme
+            scheme_name, file_url = scheme_name, ''  # You might need to provide a valid file_url here
+            await add_new_scheme(scheme_name=scheme_name, file_url=file_url, db=db, current_user=current_user)
+            scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
 
         # Check if the question already exists to avoid duplicates
         existing_question = db.query(QuestionModel).filter(QuestionModel.title == title, QuestionModel.scheme_name == scheme_name).first()
@@ -339,7 +338,7 @@ async def delete_user(
                     
             db.delete(db_user)
             db.commit()
-            return responses.JSONResponse(content = {'message' : 'User deleted'}, status_code=201)
+            return JSONResponse(content = {'message' : 'User deleted'}, status_code=201)
         
         except Exception as e:
             db.rollback()
@@ -472,7 +471,8 @@ async def add_user_to_scheme(
         
         db_scheme.users.append(user)
         db.commit()
-        return responses.JSONResponse(content={"message": "Scheme has been updated successfully"}, status_code=201)
+        return JSONResponse(content={"message": "Scheme has been updated successfully"}, status_code=201)
+
 
     raise HTTPException(status_code=404, detail="This is not an existing scheme")
 
@@ -591,7 +591,7 @@ async def delete_scheme(
     db.delete(db_scheme)
     db.commit()
 
-    return responses.JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions, attempts, and stored files."}, status_code=201)
+    return JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions, attempts, and stored files."}, status_code=201)
 
 ## QUESTION ROUTES ##
 @app.get("/questions/scheme/{scheme_name}", status_code=status.HTTP_201_CREATED)
@@ -635,7 +635,7 @@ async def delete_question(
                 db.delete(attempt)
         db.delete(db_question)
         db.commit()
-        return responses.JSONResponse(content={"message": "Question deleted successfully along with related attempts."}, status_code=201)
+        return JSONResponse(content={"message": "Question deleted successfully along with related attempts."}, status_code=201)
     
     except Exception as e:
         db.rollback()

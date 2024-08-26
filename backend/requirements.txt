@@ -14,3 +14,4 @@ python-dotenv==1.0.1
 python_jose==3.3.0
 Requests==2.32.3
 SQLAlchemy==2.0.20
+uvicorn

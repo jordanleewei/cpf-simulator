@@ -51,24 +51,24 @@ app.add_middleware(
     allow_headers=["Authorization"],
 )
 
-# Middleware to log requests
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Request from {request.client.host}:{request.client.port}")
-    logger.info(f"Request origin: {request.headers.get('origin')}")
-    logger.info(f"Request method: {request.method} {request.url}")
-    logger.info(f"Request headers: {request.headers}")
+# # Middleware to log requests
+# @app.middleware("http")
+# async def log_requests(request: Request, call_next):
+#     logger.info(f"Request from {request.client.host}:{request.client.port}")
+#     logger.info(f"Request origin: {request.headers.get('origin')}")
+#     logger.info(f"Request method: {request.method} {request.url}")
+#     logger.info(f"Request headers: {request.headers}")
 
-    if request.method in ["POST", "PUT"]:
-        body = await request.body()
-        logger.info(f"Request body: {body.decode('utf-8')}")
+#     if request.method in ["POST", "PUT"]:
+#         body = await request.body()
+#         logger.info(f"Request body: {body.decode('utf-8')}")
 
-    response = await call_next(request)
+#     response = await call_next(request)
 
-    logger.info(f"Response status: {response.status_code}")
-    logger.info(f"Response headers: {response.headers}")
+#     logger.info(f"Response status: {response.status_code}")
+#     logger.info(f"Response headers: {response.headers}")
 
-    return response
+#     return response
 
 # AWS S3 configuration
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
@@ -91,10 +91,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Database initialization
 Base.metadata.create_all(bind=engine)
-
-@app.post("/test-corss")
-async def test_cors():
-    return {"message": "CORS is working!"}
 
 # JWT token creation
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -246,13 +242,12 @@ async def upload_questions_csv(
         combined_system_names = ", ".join([name for name, _ in ideal_system_urls if pd.notna(name)])
         combined_system_urls = ", ".join([url for _, url in ideal_system_urls if pd.notna(url)])
 
-        # Check if the scheme exists, if not create it
+        # Check if the scheme exists, if not create it using the add_new_scheme function
         scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
         if not scheme:
-            new_scheme = SchemeModel(scheme_name=scheme_name)
-            db.add(new_scheme)
-            db.commit()
-            scheme = new_scheme
+            scheme_name, file_url = scheme_name, ''  # You might need to provide a valid file_url here
+            await add_new_scheme(scheme_name=scheme_name, file_url=file_url, db=db, current_user=current_user)
+            scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
 
         # Check if the question already exists to avoid duplicates
         existing_question = db.query(QuestionModel).filter(QuestionModel.title == title, QuestionModel.scheme_name == scheme_name).first()
@@ -402,7 +397,7 @@ async def delete_user(
                     
             db.delete(db_user)
             db.commit()
-            return responses.JSONResponse(content = {'message' : 'User deleted'}, status_code=201)
+            return JSONResponse(content = {'message' : 'User deleted'}, status_code=201)
         
         except Exception as e:
             db.rollback()
@@ -415,11 +410,12 @@ async def create_user(
     current_user: UserModel = Depends(get_current_user)  # Ensure the current user is authenticated
 ):
     # Check if the current user is an admin
-    if current_user.access_rights != "admin":
+    if current_user.access_rights.lower() != "admin":
+        print(current_user.access_rights)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
 
     # Check if the new user is also going to be an admin
-    if user.access_rights == "admin" and current_user.access_rights != "admin":
+    if user.access_rights.lower() == "admin" and current_user.access_rights.lower()  != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can create other admins")
 
     hashed_password = pwd_context.hash(user.password)
@@ -534,7 +530,8 @@ async def add_user_to_scheme(
         
         db_scheme.users.append(user)
         db.commit()
-        return responses.JSONResponse(content={"message": "Scheme has been updated successfully"}, status_code=201)
+        return JSONResponse(content={"message": "Scheme has been updated successfully"}, status_code=201)
+
 
     raise HTTPException(status_code=404, detail="This is not an existing scheme")
 
@@ -653,7 +650,7 @@ async def delete_scheme(
     db.delete(db_scheme)
     db.commit()
 
-    return responses.JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions, attempts, and stored files."}, status_code=201)
+    return JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions, attempts, and stored files."}, status_code=201)
 
 ## QUESTION ROUTES ##
 @app.get("/questions/scheme/{scheme_name}", status_code=status.HTTP_201_CREATED)
@@ -697,7 +694,7 @@ async def delete_question(
                 db.delete(attempt)
         db.delete(db_question)
         db.commit()
-        return responses.JSONResponse(content={"message": "Question deleted successfully along with related attempts."}, status_code=201)
+        return JSONResponse(content={"message": "Question deleted successfully along with related attempts."}, status_code=201)
     
     except Exception as e:
         db.rollback()
@@ -830,39 +827,56 @@ async def get_user_attempts(
 
     return attempts_list
 
+import logging
+
 @app.post("/attempt", status_code=status.HTTP_201_CREATED)
 async def create_attempt(
     schema: AttemptBase, 
     db: Session = Depends(create_session), 
     current_user: UserModel = Depends(get_current_user)
 ):
-    inputs = dict(schema)
-    db_question = db.query(QuestionModel).filter(QuestionModel.question_id == inputs['question_id']).first()
-    if not db_question: 
-        raise HTTPException(status_code=404, detail="Question does not exist")
+    logging.info("Starting create_attempt function")
     
-    question = db_question.question_details
-    ideal = db_question.ideal
-    ideal_system_name = db_question.ideal_system_name
-    ideal_system_url = db_question.ideal_system_url
-
-    response = openAI_response(
-        question=question, 
-        response=inputs['answer'],
-        ideal=ideal,
-        ideal_system_name=ideal_system_name,
-        ideal_system_url=ideal_system_url,
-        system_name=inputs['system_name'],
-        system_url=inputs['system_url']
-    )
+    try:
+        inputs = dict(schema)
+        db_question = db.query(QuestionModel).filter(QuestionModel.question_id == inputs['question_id']).first()
+        
+        if not db_question: 
+            logging.error("Question not found")
+            raise HTTPException(status_code=404, detail="Question does not exist")
+        
+        question = db_question.question_details
+        ideal = db_question.ideal
+        ideal_system_name = db_question.ideal_system_name
+        ideal_system_url = db_question.ideal_system_url
+        
+        logging.info("Question details retrieved successfully")
+        
+        response = openAI_response(
+            question=question, 
+            response=inputs['answer'],
+            ideal=ideal,
+            ideal_system_name=ideal_system_name,
+            ideal_system_url=ideal_system_url,
+            system_name=inputs['system_name'],
+            system_url=inputs['system_url']
+        )
+        
+        logging.info("Response from openAI_response obtained")
+        
+        response_data = process_response(response)
+        inputs.update(response_data)
+        
+        db_attempt = AttemptModel(**inputs)
+        db.add(db_attempt)
+        db.commit()
+        
+        logging.info("Attempt created successfully")
+        return db_attempt.attempt_id
     
-    response = process_response(response)
-    inputs.update(response)
-    db_attempt = AttemptModel(**inputs)
-    db.add(db_attempt)
-    db.commit()
-
-    return db_attempt.attempt_id
+    except Exception as e:
+        logging.error(f"Failed to create attempt: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create attempt: {str(e)}")
 
 @app.get("/attempt/average_scores/user/{user_id}", status_code=200)
 async def get_user_average_scores(

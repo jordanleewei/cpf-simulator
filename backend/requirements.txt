@@ -1,16 +1,18 @@
 fastapi
 cryptography
 
-# for ML portion
+# For ML portion
 torch
 transformers
 openai
 sentence-transformers
-langchain
+langchain==0.2.9 # Specify version to avoid issues with rapid updates
 langchain-community
+langchain-huggingface  # New package for HuggingFace embeddings
+langchain-chroma       # New package for Chroma vectorstore
 chromadb
 pymysql
-pydantic_settings
+pydantic-settings
 python-multipart
 pandas
 python-dotenv

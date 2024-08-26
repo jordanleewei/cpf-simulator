@@ -670,6 +670,32 @@ async def add_question_to_scheme(
     else:
         raise HTTPException(status_code=404, detail="Scheme not found")
     
+@app.put("/question/{question_id}", status_code=status.HTTP_200_OK)
+async def update_question(
+    question_id: str, 
+    question: QuestionBase, 
+    db: Session = Depends(create_session), 
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Check if the question exists
+    db_question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
+    if not db_question:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    # Update the question fields
+    db_question.title = question.title
+    db_question.question_difficulty = question.question_difficulty
+    db_question.question_details = question.question_details
+    db_question.ideal = question.ideal
+    db_question.ideal_system_name = question.ideal_system_name
+    db_question.ideal_system_url = question.ideal_system_url
+
+    # Commit the changes to the database
+    db.commit()
+    db.refresh(db_question)
+
+    return {"message": "Question updated successfully", "question_id": question_id, "updated_question": db_question}
+    
 ## TABLE ROUTE ##
 @app.get("/table/{user_id}/{scheme_name}", status_code=status.HTTP_201_CREATED)
 async def get_table_details_of_user_for_scheme(

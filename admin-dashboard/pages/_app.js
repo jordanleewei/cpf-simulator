@@ -1,4 +1,3 @@
-// admin-dashboard/pages/_app.js
 import "../styles/global.css";
 import Header from "../components/Layouts/Header";
 import Footer from "../components/Layouts/Footer";
@@ -12,21 +11,14 @@ export default function App({ Component, pageProps }) {
   useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      const loggedUserJSON = window.localStorage.getItem("loggedUser");
-      let token = null;
-
-      if (loggedUserJSON) {
-        const loggedUser = JSON.parse(loggedUserJSON);
-        token = loggedUser.access_token;
-      }
+      const token = window.localStorage.getItem("loggedUserToken"); // Retrieve the token separately
 
       const [resource, config] = args;
       const newConfig = {
         ...config,
-        credentials: 'include',  // Always include credentials
         headers: {
           ...config?.headers,
-          Authorization: `Bearer ${token}`, // Attach token if available
+          Authorization: token ? `Bearer ${token}` : undefined, // Attach token if available
         },
       };
       return originalFetch(resource, newConfig);
@@ -46,6 +38,7 @@ export default function App({ Component, pageProps }) {
 
     const logoutUser = () => {
       window.localStorage.removeItem("loggedUser");
+      window.localStorage.removeItem("loggedUserToken"); // Remove the token on logout
       setUser(null);
       router.push("/").then(() => {
         alert("You have been logged out due to inactivity.");

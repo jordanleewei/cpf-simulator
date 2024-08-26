@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request, Form, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, joinedload
@@ -26,38 +27,48 @@ from datetime import datetime, timedelta
 import boto3
 import pandas as pd
 from io import StringIO
-from starlette.middleware.base import BaseHTTPMiddleware
 from models.token import Token  # Import the Token model
-
+from fastapi.responses import JSONResponse
 
 # Import OAuth2PasswordBearer
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 app = FastAPI()
 
-# Load CORS origins from environment variable
-origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com"]
 
-class CustomCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin")
-        if request.method == "OPTIONS":
-            response = Response(status_code=200)
-            response.headers["Access-Control-Allow-Origin"] = origin or "http://localhost:3001"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Requested-With"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            return response
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["Authorization"],
+)
 
-        response = await call_next(request)
-        if origin:
-            response.headers["Access-Control-Allow-Origin"] = origin or "http://localhost:3001"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-        return response
+# Middleware to log requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request from {request.client.host}:{request.client.port}")
+    logger.info(f"Request origin: {request.headers.get('origin')}")
+    logger.info(f"Request method: {request.method} {request.url}")
+    logger.info(f"Request headers: {request.headers}")
 
-app.add_middleware(CustomCORSMiddleware)
+    if request.method in ["POST", "PUT"]:
+        body = await request.body()
+        logger.info(f"Request body: {body.decode('utf-8')}")
+
+    response = await call_next(request)
+
+    logger.info(f"Response status: {response.status_code}")
+    logger.info(f"Response headers: {response.headers}")
+
+    return response
 
 # AWS S3 configuration
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
@@ -80,6 +91,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Database initialization
 Base.metadata.create_all(bind=engine)
+
+@app.post("/test-corss")
+async def test_cors():
+    return {"message": "CORS is working!"}
 
 # JWT token creation
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -137,13 +152,6 @@ async def login_for_access_token(db: Session = Depends(create_session), form_dat
         "name": user.name,
         "access_rights": user.access_rights  # Include access_rights directly in the response
     }
-
-
-
-# Example route protected by JWT
-@app.get("/user/me", response_model=UserResponseSchema)
-async def get_current_user_data(current_user: UserModel = Depends(get_current_user)):
-    return current_user
 
 # Upload questions CSV route (protected by JWT)
 @app.post("/upload-questions-csv", status_code=201)
@@ -212,10 +220,10 @@ async def upload_questions_csv(
 async def redirect_to_docs():
     return RedirectResponse(url="/docs")
 
-# Add default systems (protected by JWT)
+# Updated /default-systems endpoint
 @app.get("/default-systems", status_code=200)
 async def get_default_systems(current_user: UserModel = Depends(get_current_user)):
-    return responses.JSONResponse({
+    return JSONResponse({
         "SYSTEM_1_NAME": os.getenv("SYSTEM_1_NAME"),
         "SYSTEM_1_URL": os.getenv("SYSTEM_1_URL"),
         "SYSTEM_2_NAME": os.getenv("SYSTEM_2_NAME"),

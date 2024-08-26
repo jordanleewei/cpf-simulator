@@ -12,33 +12,36 @@ import os
 from dotenv import load_dotenv
 from fuzzywuzzy import fuzz
 
-
 load_dotenv()
 
 file_path = "./ML/faq_data_11Jul.csv"
+vectorstore_path = "./ML/vectorstore"  # Define where to save the vectorstore
 
+# Load the CSV file
 loader = CSVLoader(file_path=file_path, encoding='utf-8')
 data = loader.load()
+
+# Split the documents
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
 docs = text_splitter.split_documents(data)
 
-# Define the path to the pre-trained model you want to use
+# Load the embeddings
 modelPath = "sentence-transformers/all-MiniLM-l6-v2"
-
-# Create a dictionary with model configuration options, specifying to use the CPU for computations
 model_kwargs = {'device':'cpu'}
-
-# Create a dictionary with encoding options, specifically setting 'normalize_embeddings' to False
 encode_kwargs = {'normalize_embeddings': False}
 
-# Initialize an instance of HuggingFaceEmbeddings with the specified parameters
 embeddings = HuggingFaceEmbeddings(
     model_name=modelPath,    
     model_kwargs=model_kwargs, 
     encode_kwargs=encode_kwargs 
 )
 
-vectorstore = Chroma.from_documents(documents=docs, embedding=embeddings)
+# Check if the vectorstore already exists, otherwise create and save it
+if os.path.exists(vectorstore_path):
+    vectorstore = Chroma(persist_directory=vectorstore_path)
+else:
+    vectorstore = Chroma.from_documents(documents=docs, embedding=embeddings, persist_directory=vectorstore_path)
+    vectorstore.persist()
 
 retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 

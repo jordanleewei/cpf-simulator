@@ -1,4 +1,3 @@
-// admin-dashboard/pages/index.js
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
@@ -42,6 +41,7 @@ export default function Login({ setUser }) {
         handleNotification("User does not have admin access");
       } else {
         window.localStorage.setItem("loggedUser", JSON.stringify(data));
+        window.localStorage.setItem("loggedUserToken", data.access_token); // Store the token separately
         setUser(data);
         router.push("/myteam");
       }
@@ -50,7 +50,28 @@ export default function Login({ setUser }) {
       handleNotification("An error occurred. Please try again.");
     }
   }
-  
+
+  // Function to test the /test-cors endpoint
+  async function testCors() {
+    try {
+      const res = await fetch(`${API_URL}/test-cors`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        handleNotification(`CORS Test Passed: ${data.message}`);
+      } else {
+        handleNotification("CORS Test Failed");
+      }
+    } catch (e) {
+      console.log(e);
+      handleNotification("An error occurred while testing CORS.");
+    }
+  }
 
   return (
     <div className="login-component">
@@ -95,6 +116,13 @@ export default function Login({ setUser }) {
             Login
           </button>
         </form>
+        {/* Button to test the /test-cors endpoint */}
+        <button
+          onClick={testCors}
+          className="bg-blue-500 hover:bg-blue-700 text-white rounded-lg px-8 py-2 mt-5 sm:w-[300px] focus:outline-none focus:ring-2"
+        >
+          Test CORS
+        </button>
       </div>
     </div>
   );

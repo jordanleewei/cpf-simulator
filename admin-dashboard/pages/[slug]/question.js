@@ -1,7 +1,5 @@
-// framework
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-// components
 import isAuth from "../../components/isAuth";
 import BackBar from "../../components/BackBar";
 
@@ -9,8 +7,9 @@ function Question() {
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
-  const [question, setQuestion] = useState({});
+  const [question, setQuestion] = useState(null);  // Initially set as null
   const [editMode, setEditMode] = useState(false);
+  const [shouldRefetch, setShouldRefetch] = useState(false); // This state will trigger data refetch
   const [formState, setFormState] = useState({
     title: "",
     question_difficulty: "",
@@ -25,14 +24,12 @@ function Question() {
     async function getData() {
       if (router.isReady) {
         try {
-          const res = await fetch(
-            `${API_URL}/question/${router.query.slug}`
-          );
+          const res = await fetch(`${API_URL}/question/${router.query.slug}`);
           if (!res.ok) {
             throw new Error("Failed to fetch data");
           } else {
             const data = await res.json();
-            setQuestion(data);
+            setQuestion(data);  // Update the question object
             setFormState({
               title: data.title || "",
               question_difficulty: data.question_difficulty || "",
@@ -48,8 +45,10 @@ function Question() {
         }
       }
     }
+
+    // Call getData when the component is mounted and when refetch is triggered
     getData();
-  }, [router.isReady, API_URL, router.query.slug]);
+  }, [router.isReady, API_URL, router.query.slug, shouldRefetch]);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -63,8 +62,6 @@ function Question() {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Data being sent:", formState); // Log formState before sending
-
     try {
       const res = await fetch(`${API_URL}/question/${router.query.slug}`, {
         method: "PUT",
@@ -78,20 +75,35 @@ function Question() {
         throw new Error("Failed to update question");
       }
 
-      const updatedQuestion = await res.json();
-      setQuestion(updatedQuestion);
+      // Trigger refetch after form submission
+      setShouldRefetch(prev => !prev); // Toggle the state to trigger useEffect
       setEditMode(false); // Exit edit mode on success
     } catch (error) {
       console.error("Error updating question:", error);
     }
   };
 
+  if (!question) {
+    return <div>Loading...</div>; // Show a loading state if the question hasn't been fetched yet
+  }
+
   return (
     <div className="exercise-container">
       <BackBar review={false} submit={false} profile={false} />
-      <div className="exercise-card">
+
+      <div className="exercise-card relative">
+        {/* Edit Button at the Top Right Corner of the Card */}
+        {!editMode && (
+          <button
+            className="bg-dark-green hover:bg-darker-green text-white py-2 px-4 rounded-md absolute top-4 right-4"
+            onClick={() => setEditMode(true)}
+          >
+            Edit
+          </button>
+        )}
+
         {editMode ? (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} style={{ width: "100%", padding: "10px" }}>
             <div className="font-bold text-2xl">
               <label>
                 Title:{" "}
@@ -101,6 +113,7 @@ function Question() {
                   value={formState.title}
                   onChange={handleInputChange}
                   className="input-field"
+                  style={{ width: "100%", padding: "10px" }}
                 />
               </label>
             </div>
@@ -121,6 +134,7 @@ function Question() {
                   value={formState.question_difficulty}
                   onChange={handleInputChange}
                   className="input-field"
+                  style={{ width: "100%", padding: "10px" }}
                 />
               </label>
             </div>
@@ -133,6 +147,12 @@ function Question() {
                   value={formState.question_details}
                   onChange={handleInputChange}
                   className="textarea-field"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    height: "200px",
+                    overflowY: "scroll",
+                  }}
                 />
               </label>
             </div>
@@ -145,6 +165,12 @@ function Question() {
                   value={formState.ideal}
                   onChange={handleInputChange}
                   className="textarea-field"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    height: "200px",
+                    overflowY: "scroll",
+                  }}
                 />
               </label>
             </div>
@@ -158,6 +184,7 @@ function Question() {
                   value={formState.ideal_system_name}
                   onChange={handleInputChange}
                   className="input-field"
+                  style={{ width: "100%", padding: "10px" }}
                 />
               </label>
             </div>
@@ -171,23 +198,24 @@ function Question() {
                   value={formState.ideal_system_url}
                   onChange={handleInputChange}
                   className="input-field"
+                  style={{ width: "100%", padding: "10px" }}
                 />
               </label>
             </div>
 
-            <div className="flex justify-between">
-              <button
-                type="submit"
-                className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4 mt-4"
-              >
-                Save Changes
-              </button>
+            <div className="flex justify-between mt-4">
               <button
                 type="button"
-                className="bg-red-500 hover:bg-red-600 rounded-md text-white py-2 px-4 mt-4"
+                className="bg-red-500 hover:bg-red-600 text-white rounded-md py-2 px-4"
                 onClick={() => setEditMode(false)}
               >
                 Back
+              </button>
+              <button
+                type="submit"
+                className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+              >
+                Save Changes
               </button>
             </div>
           </form>
@@ -229,21 +257,6 @@ function Question() {
                   <li key={index}>{url}</li>
                 ))}
               </ul>
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4 mt-4"
-                onClick={() => setEditMode(true)}
-              >
-                Edit
-              </button>
-              <button
-                className="bg-red-500 hover:bg-red-600 rounded-md text-white py-2 px-4 mt-4"
-                onClick={() => router.back()}
-              >
-                Back
-              </button>
             </div>
           </>
         )}

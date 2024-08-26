@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: cpf_simulator_backend_connected_to_aws_rdb
     ports:
       - "8000:8000"
     env_file:

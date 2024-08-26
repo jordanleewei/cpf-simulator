@@ -40,8 +40,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-
 app = FastAPI()
 
 origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com", "http://localhost:3001", "http://localhost:3000"]

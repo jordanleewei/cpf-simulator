@@ -9,10 +9,10 @@ function Schemes() {
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [schemes, setSchemes] = useState([]);
+  const [originalSchemes, setOriginalSchemes] = useState([]); // Initialize originalSchemes
   const [editState, setEditState] = useState(false);
   const [deletedSchemes, setDeletedSchemes] = useState([]);
   const [deleteId, setDeleteId] = useState("");
-  const [originalSchemes, setOriginalSchemes] = useState([]);
   const [csvFile, setCsvFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
 
@@ -25,21 +25,23 @@ function Schemes() {
         const schemeData = await res.json();
 
         // Format scheme names to capitalized format and ensure questions is an array
-        const formattedSchemes = schemeData.map(scheme => ({
+        const formattedSchemes = schemeData.map((scheme) => ({
           ...scheme,
-          scheme_name: scheme.scheme_name.charAt(0).toUpperCase() + scheme.scheme_name.slice(1).toLowerCase(),
-          questions: Array.isArray(scheme.questions) ? scheme.questions : [] // Ensure questions is an array
+          scheme_name:
+            scheme.scheme_name.charAt(0).toUpperCase() +
+            scheme.scheme_name.slice(1).toLowerCase(),
+          questions: Array.isArray(scheme.questions) ? scheme.questions : [], // Ensure questions is an array
         }));
 
         setSchemes(formattedSchemes);
-        setOriginalSchemes(formattedSchemes);
+        setOriginalSchemes(formattedSchemes); // Set originalSchemes here
       } catch (e) {
         console.log(e);
       }
     }
 
     getSchemes();
-  }, []);
+  }, [API_URL]);
 
   // Function to handle CSV file selection
   const handleFileChange = (event) => {
@@ -83,12 +85,12 @@ function Schemes() {
     );
     setSchemes(updatedSchemes);
     setDeletedSchemes([...deletedSchemes, schemeName]);
-    setDeleteId(""); // 
+    setDeleteId(""); // Clear deleteId
   };
 
   // Function to cancel delete operation
   const cancelDelete = () => {
-    setSchemes(originalSchemes);
+    setSchemes(originalSchemes); // Restore originalSchemes
     setDeletedSchemes([]);
     setDeleteId("");
     setEditState(false);
@@ -106,12 +108,21 @@ function Schemes() {
           console.error(`Failed to delete scheme ${schemeName}`);
         }
       }
+
       setDeletedSchemes([]);
       setDeleteId("");
       setEditState(false);
     } catch (error) {
       console.error("Error deleting scheme:", error);
     }
+  };
+
+  // Function to update the scheme name in the frontend state
+  const updateSchemeName = (index, newName) => {
+    const updatedSchemes = schemes.map((scheme, i) =>
+      i === index ? { ...scheme, scheme_name: newName } : scheme
+    );
+    setSchemes(updatedSchemes);
   };
 
   return (
@@ -154,7 +165,7 @@ function Schemes() {
           </div>
         )}
       </div>
-      
+
       {/* CSV Upload Section */}
       <div className="my-4">
         <input type="file" accept=".csv" onChange={handleFileChange} />
@@ -166,20 +177,19 @@ function Schemes() {
         </button>
         {uploadMessage && <p className="mt-2 text-red-500">{uploadMessage}</p>}
       </div>
-      
+
       <div className="schemes-container">
         {schemes.length > 0 ? (
-          schemes.map((scheme) => (
+          schemes.map((scheme, index) => (
             <SchemeCard
               key={scheme.scheme_name}
               scheme_name={scheme.scheme_name}
               scheme_img={scheme.scheme_admin_img_path}
-              questions={scheme.questions.length}  // Safely access the questions length
+              questions={scheme.questions.length} // Safely access the questions length
               scheme_button={true}
               editState={editState}
-              schemes={schemes}
-              setSchemes={setSchemes}
               setDeleteId={setDeleteId}
+              updateSchemeName={(newName) => updateSchemeName(index, newName)} // Pass the update function to the SchemeCard
               isDeleted={deletedSchemes.includes(scheme.scheme_name)}
               handleDelete={() => handleDelete(scheme.scheme_name)}
             />
@@ -207,7 +217,9 @@ function Schemes() {
             setId={setDeleteId}
             handleDelete={() => handleDelete(deleteId)}
             text={
-              schemes.filter((scheme) => scheme.scheme_name === deleteId).map((scheme) => scheme.scheme_name)[0]
+              schemes
+                .filter((scheme) => scheme.scheme_name === deleteId)
+                .map((scheme) => scheme.scheme_name)[0]
             }
           />
           <div className="w-screen h-screen bg-gray-500/50 absolute z-30" />

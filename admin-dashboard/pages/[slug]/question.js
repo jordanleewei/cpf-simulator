@@ -59,6 +59,15 @@ function Question() {
     }));
   };
 
+  // Handle Difficulty change
+  const handleDifficultyChange = (e) => {
+    const value = e.target.value;
+    setFormState((prevState) => ({
+      ...prevState,
+      question_difficulty: value,
+    }));
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,14 +137,17 @@ function Question() {
             <div>
               <label>
                 <span className="font-bold">Difficulty: </span>
-                <input
-                  type="text"
+                <select
                   name="question_difficulty"
                   value={formState.question_difficulty}
-                  onChange={handleInputChange}
+                  onChange={handleDifficultyChange}
                   className="input-field"
                   style={{ width: "100%", padding: "10px" }}
-                />
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Complex">Complex</option>
+                </select>
               </label>
             </div>
 

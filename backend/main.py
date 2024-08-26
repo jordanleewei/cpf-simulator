@@ -84,7 +84,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT configuration
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 90
 
 # OAuth2 configuration
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -102,7 +102,17 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=30)  # Shorter expiry for access token
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(hours=6)  # Longer expiry for refresh token
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -140,18 +150,67 @@ async def login_for_access_token(db: Session = Depends(create_session), form_dat
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # Issue access and refresh tokens
+    access_token_expires = timedelta(minutes=30)
+    refresh_token_expires = timedelta(hours=6)
+    
     access_token = create_access_token(
         data={"sub": user.uuid}, expires_delta=access_token_expires
     )
+    refresh_token = create_refresh_token(
+        data={"sub": user.uuid}, expires_delta=refresh_token_expires
+    )
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "uuid": user.uuid,
         "email": user.email,
         "name": user.name,
         "access_rights": user.access_rights  # Include access_rights directly in the response
     }
+
+@app.post("/refresh-token")
+async def refresh_access_token(refresh_token: str, db: Session = Depends(create_session)):
+    try:
+        # Decode the refresh token
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Verify if the user still exists
+        user = db.query(UserModel).filter(UserModel.uuid == user_id).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Issue a new access token
+        access_token_expires = timedelta(minutes=30)
+        new_access_token = create_access_token(
+            data={"sub": user.uuid}, expires_delta=access_token_expires
+        )
+
+        return {
+            "access_token": new_access_token,
+            "token_type": "bearer"
+        }
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 # Upload questions CSV route (protected by JWT)
 @app.post("/upload-questions-csv", status_code=201)

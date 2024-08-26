@@ -1,4 +1,5 @@
 // framework
+import { useState } from "react"; 
 import Image from "next/image";
 import { useRouter } from "next/router";
 // images
@@ -12,11 +13,23 @@ export default function SchemeCard({
   scheme_button,
   editState,
   setDeleteId,
+  updateSchemeName,
 }) {
   const router = useRouter();
+  const [localSchemeName, setLocalSchemeName] = useState(scheme_name);
+
+  // Handle input change for local state
+  const handleInputChange = (e) => {
+    setLocalSchemeName(e.target.value);
+  };
+
+  // Update the scheme name in the parent state when the input loses focus
+  const handleBlur = () => {
+    updateSchemeName(localSchemeName);
+  };
 
   function onClick() {
-    var pagename = scheme_name.toLowerCase();
+    var pagename = localSchemeName.toLowerCase();
     router.push(`/${pagename}/exercises`, undefined, { shallow: true });
   }
 
@@ -27,7 +40,18 @@ export default function SchemeCard({
         alt="scheme image"
         className="rounded-xl object-cover w-60 h-60"
       />
-      <div className="font-bold pt-2 pb-4">{scheme_name}</div>
+      {editState ? (
+        <input
+          type="text"
+          value={localSchemeName}
+          onChange={handleInputChange}
+          onBlur={handleBlur}  // Only update parent state on blur
+          className="font-bold pt-2 pb-4 border border-gray-300 rounded-md px-2 py-1"
+          style={{ width: '100%' }}
+        />
+      ) : (
+        <div className="font-bold pt-2 pb-4">{localSchemeName}</div>
+      )}
       <div className="flex flex-row gap-2">
         <Image src={caseimg} alt="case icon" width="auto" height="auto" />
         <span>Case Scenarios: {questions} </span>

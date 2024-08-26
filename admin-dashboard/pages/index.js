@@ -51,28 +51,6 @@ export default function Login({ setUser }) {
     }
   }
 
-  // Function to test the /test-cors endpoint
-  async function testCors() {
-    try {
-      const res = await fetch(`${API_URL}/test-cors`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        handleNotification(`CORS Test Passed: ${data.message}`);
-      } else {
-        handleNotification("CORS Test Failed");
-      }
-    } catch (e) {
-      console.log(e);
-      handleNotification("An error occurred while testing CORS.");
-    }
-  }
-
   return (
     <div className="login-component">
       <div className="bg-light-green shadow rounded-md p-5 md:p-10 lg:p-20 md:max-w-lg lg:max-w-xl">
@@ -116,13 +94,6 @@ export default function Login({ setUser }) {
             Login
           </button>
         </form>
-        {/* Button to test the /test-cors endpoint */}
-        <button
-          onClick={testCors}
-          className="bg-blue-500 hover:bg-blue-700 text-white rounded-lg px-8 py-2 mt-5 sm:w-[300px] focus:outline-none focus:ring-2"
-        >
-          Test CORS
-        </button>
       </div>
     </div>
   );

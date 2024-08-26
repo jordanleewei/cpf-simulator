@@ -41,7 +41,7 @@ load_dotenv()
 
 app = FastAPI()
 
-origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com"]
+origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com", "http://localhost:3001"]
 
 app.add_middleware(
     CORSMiddleware,

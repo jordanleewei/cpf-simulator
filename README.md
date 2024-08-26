@@ -44,14 +44,8 @@ source yourenvname/bin/activate
     • Download the MySQL Workbench installer.                
     • Follow the installation instructions provided for your operating system.                
 
-**3. Start MySQL Server:**                
-    Once MySQL is installed, start the local server. This typically involves starting the MySQL service.                    
-    Create a New Schema in MySQL Workbench:            
-        • Open MySQL Workbench.                    
-        • Connect to your local MySQL server.        
-        • In the Navigator (left sidebar), under the "SCHEMAS" section, right-click and select "Create Schema".        
-        • Enter the name for your new schema and click "Apply" and then "Finish".            
-
+**3. Configure MySQL Server:**                
+    • Connect to MySQL using the DSN environment variable
 
 ### Configuring Backend ####
 **1. Edit Configuration File:**                
@@ -104,7 +98,7 @@ pip install -r requirements.txt
 
 ### Link to MySQL database
 ```
-uvicorn main:app
+uvicorn main:app --reload
 ```
 
 ### Run the Admin Dasboard        

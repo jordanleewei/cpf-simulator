@@ -6,9 +6,9 @@ torch
 transformers
 openai
 sentence-transformers
-langchain==0.1.14
+langchain
 langchain-community
-chromadb==0.4.15
+chromadb
 pymysql
 pydantic_settings
 python-multipart

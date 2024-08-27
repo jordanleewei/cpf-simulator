@@ -1,5 +1,5 @@
 from sqlalchemy import Integer, Column, ForeignKey, String, DateTime, String
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import relationship, Mapped
 from config import Base
 import uuid
 import datetime
@@ -30,7 +30,12 @@ class AttemptModel(Base):
     tone_feedback: Mapped[str] = Column(String(1000), nullable=False)
     feedback: Mapped[str] = Column(String(3000), nullable=False)
     
+     # Foreign key to AIImprovementsModel
+    ai_improvement_id: Mapped[str] = Column(String(255), ForeignKey("ai_improvements.ai_improvements_id"), nullable=False)
     
+    # Relationship back to AIImprovementsModel
+    ai_improvement: Mapped["AIImprovementsModel"] = relationship("AIImprovementsModel", back_populates="attempts")
+
     def to_dict(self):
         return {
             "attempt_id": self.attempt_id,

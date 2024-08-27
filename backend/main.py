@@ -652,6 +652,59 @@ async def delete_scheme(
 
     return JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions, attempts, and stored files."}, status_code=201)
 
+@app.put("/scheme/update-name/{old_scheme_name}", status_code=status.HTTP_200_OK)
+async def update_scheme_name(
+    old_scheme_name: str,
+    request: Request,
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    try:
+        data = await request.json()
+        new_scheme_name = data.get('new_scheme_name')
+
+        if not new_scheme_name:
+            raise HTTPException(status_code=422, detail="New scheme name is required")
+
+        # Check if the new scheme name already exists
+        existing_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == new_scheme_name).first()
+        if existing_scheme:
+            raise HTTPException(status_code=400, detail="The new scheme name already exists.")
+
+        # Fetch the old scheme
+        db_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == old_scheme_name).first()
+        if not db_scheme:
+            raise HTTPException(status_code=404, detail="Scheme not found.")
+
+        # Insert the new scheme with the same image paths
+        new_scheme = SchemeModel(
+            scheme_name=new_scheme_name,
+            scheme_csa_img_path=db_scheme.scheme_csa_img_path,
+            scheme_admin_img_path=db_scheme.scheme_admin_img_path,
+            user_id=db_scheme.user_id
+        )
+        db.add(new_scheme)
+        db.commit()
+
+        # Update the `question` table to reference the new scheme
+        db.query(QuestionModel).filter(QuestionModel.scheme_name == old_scheme_name).update(
+            {"scheme_name": new_scheme_name}
+        )
+
+        # Commit the changes to the `question` table
+        db.commit()
+
+        # Finally, delete the old scheme
+        db.query(SchemeModel).filter(SchemeModel.scheme_name == old_scheme_name).delete()
+        db.commit()
+
+        return {"message": f"Scheme name updated successfully from '{old_scheme_name}' to '{new_scheme_name}'."}
+    
+    except Exception as e:
+        db.rollback()
+        print(f"Error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating scheme name: {str(e)}")
+
 ## QUESTION ROUTES ##
 @app.get("/questions/scheme/{scheme_name}", status_code=status.HTTP_201_CREATED)
 async def get_questions_by_scheme_name(

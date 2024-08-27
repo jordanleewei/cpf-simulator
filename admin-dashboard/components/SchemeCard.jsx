@@ -1,5 +1,5 @@
 // framework
-import { useState } from "react"; 
+import { useState, useEffect} from "react"; 
 import Image from "next/image";
 import { useRouter } from "next/router";
 // images
@@ -14,6 +14,8 @@ export default function SchemeCard({
   editState,
   setDeleteId,
   updateSchemeName,
+  originalSchemeName, 
+  cancelEdit, 
 }) {
   const router = useRouter();
   const [localSchemeName, setLocalSchemeName] = useState(scheme_name);
@@ -28,8 +30,15 @@ export default function SchemeCard({
     updateSchemeName(localSchemeName);
   };
 
+  // Revert the scheme name to the original value if editing is canceled
+  useEffect(() => {
+    if (cancelEdit) {
+      setLocalSchemeName(originalSchemeName); // Revert to original scheme name
+    }
+  }, [cancelEdit, originalSchemeName]);
+
   function onClick() {
-    var pagename = localSchemeName.toLowerCase();
+    const pagename = localSchemeName.toLowerCase();
     router.push(`/${pagename}/exercises`, undefined, { shallow: true });
   }
 
@@ -45,16 +54,16 @@ export default function SchemeCard({
           type="text"
           value={localSchemeName}
           onChange={handleInputChange}
-          onBlur={handleBlur}  // Only update parent state on blur
+          onBlur={handleBlur}
           className="font-bold pt-2 pb-4 border border-gray-300 rounded-md px-2 py-1"
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
         />
       ) : (
         <div className="font-bold pt-2 pb-4">{localSchemeName}</div>
       )}
       <div className="flex flex-row gap-2">
         <Image src={caseimg} alt="case icon" width="auto" height="auto" />
-        <span>Case Scenarios: {questions} </span>
+        <span>Case Scenarios: {questions}</span>
       </div>
       {scheme_button ? (
         <div className="flex flex-row gap-2 pt-6">

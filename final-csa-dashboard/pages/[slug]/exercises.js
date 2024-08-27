@@ -88,9 +88,9 @@ function Exercises(user) {
     switch (difficulty) {
       case "Easy":
         return "text-green-500";
-      case "Medium":
+      case "Intermediate":
         return "text-yellow-500";
-      case "Hard":
+      case "Complex":
         return "text-red-500";
       default:
         return "";

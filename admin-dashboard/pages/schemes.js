@@ -15,6 +15,7 @@ function Schemes() {
   const [deleteId, setDeleteId] = useState("");
   const [csvFile, setCsvFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [cancelEdit, setCancelEdit] = useState(false);
 
   const router = useRouter();
 
@@ -24,17 +25,16 @@ function Schemes() {
         const res = await fetch(`${API_URL}/scheme`);
         const schemeData = await res.json();
 
-        // Format scheme names to capitalized format and ensure questions is an array
         const formattedSchemes = schemeData.map((scheme) => ({
           ...scheme,
           scheme_name:
             scheme.scheme_name.charAt(0).toUpperCase() +
             scheme.scheme_name.slice(1).toLowerCase(),
-          questions: Array.isArray(scheme.questions) ? scheme.questions : [], // Ensure questions is an array
+          questions: Array.isArray(scheme.questions) ? scheme.questions : [],
         }));
 
         setSchemes(formattedSchemes);
-        setOriginalSchemes(formattedSchemes); // Set originalSchemes here
+        setOriginalSchemes(formattedSchemes); // Store original schemes
       } catch (e) {
         console.log(e);
       }
@@ -43,94 +43,43 @@ function Schemes() {
     getSchemes();
   }, [API_URL]);
 
-  // Function to handle CSV file selection
-  const handleFileChange = (event) => {
-    setCsvFile(event.target.files[0]);
-  };
-
-  // Function to handle CSV file upload
-  const handleFileUpload = async () => {
-    if (!csvFile) {
-      setUploadMessage("Please select a CSV file first.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", csvFile);
-
-    try {
-      const res = await fetch(`${API_URL}/upload-questions-csv`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        setUploadMessage("CSV uploaded successfully.");
-        setCsvFile(null); // Clear the file input after upload
-        // Optionally, refresh schemes data after upload
-        getSchemes();
-      } else {
-        setUploadMessage("Failed to upload CSV. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error uploading CSV:", error);
-      setUploadMessage("An error occurred during upload.");
-    }
-  };
-
-  // Function to delete a scheme from frontend only
-  const handleDelete = (schemeName) => {
-    const updatedSchemes = schemes.filter(
-      (scheme) => scheme.scheme_name !== schemeName
-    );
-    setSchemes(updatedSchemes);
-    setDeletedSchemes([...deletedSchemes, schemeName]);
-    setDeleteId(""); // Clear deleteId
-  };
-
-  // Function to cancel delete operation
   const cancelDelete = () => {
-    setSchemes(originalSchemes); // Restore originalSchemes
+    setSchemes(originalSchemes); 
     setDeletedSchemes([]);
     setDeleteId("");
     setEditState(false);
+    setCancelEdit(true); 
   };
 
-  // Function to save deleted schemes to the backend
-  const handleSave = async () => {
+  const updateSchemeName = async (index, newName) => {
+    const oldName = schemes[index].scheme_name;
+  
     try {
-      // Delete schemes from the backend
-      for (const schemeName of deletedSchemes) {
-        const res = await fetch(`${API_URL}/scheme/${schemeName}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) {
-          console.error(`Failed to delete scheme ${schemeName}`);
-        }
+      const res = await fetch(`${API_URL}/scheme/update-name/${oldName}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ new_scheme_name: newName }),
+      });
+  
+      if (res.ok) {
+        const updatedSchemes = schemes.map((scheme, i) =>
+          i === index ? { ...scheme, scheme_name: newName } : scheme
+        );
+        setSchemes(updatedSchemes);
+      } else {
+        console.error("Failed to update scheme name in the backend.");
       }
-
-      setDeletedSchemes([]);
-      setDeleteId("");
-      setEditState(false);
     } catch (error) {
-      console.error("Error deleting scheme:", error);
+      console.error("Error updating scheme name:", error);
     }
-  };
-
-  // Function to update the scheme name in the frontend state
-  const updateSchemeName = (index, newName) => {
-    const updatedSchemes = schemes.map((scheme, i) =>
-      i === index ? { ...scheme, scheme_name: newName } : scheme
-    );
-    setSchemes(updatedSchemes);
   };
 
   return (
     <div className="schemes-page-container">
-      {/* Header */}
       <div className="flex flex-row justify-between items-center text-black">
         <div className="font-bold text-3xl">Schemes Overview</div>
-        {/* Add Scheme and Edit Buttons */}
         {schemes.length > 0 && (
           <div className="flex justify-end gap-3">
             {editState ? (
@@ -143,7 +92,7 @@ function Schemes() {
                 </button>
                 <button
                   className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                  onClick={handleSave}
+                  onClick={() => setEditState(false)}
                 >
                   Save
                 </button>
@@ -166,18 +115,6 @@ function Schemes() {
         )}
       </div>
 
-      {/* CSV Upload Section */}
-      <div className="my-4">
-        <input type="file" accept=".csv" onChange={handleFileChange} />
-        <button
-          className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4 ml-3"
-          onClick={handleFileUpload}
-        >
-          Upload Questions CSV
-        </button>
-        {uploadMessage && <p className="mt-2 text-red-500">{uploadMessage}</p>}
-      </div>
-
       <div className="schemes-container">
         {schemes.length > 0 ? (
           schemes.map((scheme, index) => (
@@ -185,13 +122,13 @@ function Schemes() {
               key={scheme.scheme_name}
               scheme_name={scheme.scheme_name}
               scheme_img={scheme.scheme_admin_img_path}
-              questions={scheme.questions.length} // Safely access the questions length
+              questions={scheme.questions.length}
               scheme_button={true}
               editState={editState}
               setDeleteId={setDeleteId}
-              updateSchemeName={(newName) => updateSchemeName(index, newName)} // Pass the update function to the SchemeCard
-              isDeleted={deletedSchemes.includes(scheme.scheme_name)}
-              handleDelete={() => handleDelete(scheme.scheme_name)}
+              updateSchemeName={(newName) => updateSchemeName(index, newName)}
+              originalSchemeName={originalSchemes[index].scheme_name}
+              cancelEdit={cancelEdit} // Pass cancelEdit state
             />
           ))
         ) : (
@@ -208,23 +145,6 @@ function Schemes() {
           </div>
         )}
       </div>
-
-      {/* Delete Modal */}
-      {deleteId && (
-        <div className="w-full h-full flex justify-center items-center fixed top-0 left-0 z-40">
-          <DeleteModal
-            id={deleteId}
-            setId={setDeleteId}
-            handleDelete={() => handleDelete(deleteId)}
-            text={
-              schemes
-                .filter((scheme) => scheme.scheme_name === deleteId)
-                .map((scheme) => scheme.scheme_name)[0]
-            }
-          />
-          <div className="w-screen h-screen bg-gray-500/50 absolute z-30" />
-        </div>
-      )}
     </div>
   );
 }

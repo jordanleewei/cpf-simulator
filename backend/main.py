@@ -705,6 +705,59 @@ async def update_scheme_name(
         db.rollback()
         print(f"Error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating scheme name: {str(e)}")
+    
+@app.put("/scheme/revert-name/{current_scheme_name}", status_code=status.HTTP_200_OK)
+async def revert_scheme_name(
+    current_scheme_name: str,
+    request: Request,
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    try:
+        data = await request.json()
+        original_scheme_name = data.get('original_scheme_name')
+
+        if not original_scheme_name:
+            raise HTTPException(status_code=422, detail="Original scheme name is required")
+
+        # Check if the original scheme name already exists
+        existing_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == original_scheme_name).first()
+        if existing_scheme:
+            raise HTTPException(status_code=400, detail="The original scheme name already exists.")
+
+        # Fetch the current scheme
+        db_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == current_scheme_name).first()
+        if not db_scheme:
+            raise HTTPException(status_code=404, detail="Scheme not found.")
+
+        # Insert the original scheme with the same image paths
+        reverted_scheme = SchemeModel(
+            scheme_name=original_scheme_name,
+            scheme_csa_img_path=db_scheme.scheme_csa_img_path,
+            scheme_admin_img_path=db_scheme.scheme_admin_img_path,
+            user_id=db_scheme.user_id
+        )
+        db.add(reverted_scheme)
+        db.commit()
+
+        # Update the `question` table to reference the reverted scheme name
+        db.query(QuestionModel).filter(QuestionModel.scheme_name == current_scheme_name).update(
+            {"scheme_name": original_scheme_name}
+        )
+
+        # Commit the changes to the `question` table
+        db.commit()
+
+        # Finally, delete the current scheme
+        db.query(SchemeModel).filter(SchemeModel.scheme_name == current_scheme_name).delete()
+        db.commit()
+
+        return {"message": f"Scheme name reverted successfully from '{current_scheme_name}' to '{original_scheme_name}'."}
+    
+    except Exception as e:
+        db.rollback()
+        print(f"Error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error reverting scheme name: {str(e)}")
 
 ## QUESTION ROUTES ##
 @app.get("/questions/scheme/{scheme_name}", status_code=status.HTTP_201_CREATED)

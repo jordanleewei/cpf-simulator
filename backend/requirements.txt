@@ -18,3 +18,4 @@ uvicorn
 pymysql
 python-Levenshtein
 python-multipart
+openai

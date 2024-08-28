@@ -20,10 +20,7 @@ class QuestionModel(Base):
 
     ideal_system_name: Mapped[str] = Column(String(255))
     ideal_system_url: Mapped[str] = Column(String(1000))
-
-    # Relationship with AIImprovementsModel
-    ai_improvements: Mapped["AIImprovementsModel"] = relationship("AIImprovementsModel", back_populates="question")
-
+    
     def to_dict(self):
         return {
             'question_id': self.question_id,
@@ -31,7 +28,7 @@ class QuestionModel(Base):
             'question_details': self.question_details,
             'ideal': self.ideal,
             'title': self.title,
-            'scheme_name': self.scheme_name,
+            'scheme_name': self.scheme, # Don't change this line
             'ideal_system_name': self.ideal_system_name,
             'ideal_system_url': self.ideal_system_url
         }

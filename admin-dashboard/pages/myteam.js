@@ -98,10 +98,21 @@ function MyTeam() {
     if (search !== "") {
       filteredMembers = filteredMembers.filter(
         (member) =>
-          member.name.toLowerCase().includes(search) ||
-          member.email.toLowerCase().includes(search)
+          member.name.toLowerCase().includes(search.toLowerCase()) ||
+          member.email.toLowerCase().includes(search.toLowerCase())
       );
     }
+
+    // Sort Admins alphabetically, then Trainees alphabetically
+    filteredMembers.sort((a, b) => {
+      if (a.access_rights === "Admin" && b.access_rights !== "Admin") {
+        return -1;
+      } else if (a.access_rights !== "Admin" && b.access_rights === "Admin") {
+        return 1;
+      } else {
+        return a.name.localeCompare(b.name);
+      }
+    });
 
     setDisplayMembers(filteredMembers);
   }, [schemeFilter, search, allTeamMembers]);

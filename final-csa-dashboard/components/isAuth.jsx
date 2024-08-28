@@ -18,7 +18,10 @@ export default function isAuth(Component) {
     useEffect(() => {
       const auth = authenticated();
       if (!auth) {
-        router.push("/");
+        router.push("/login");
+        setTimeout(() => {
+          alert('Your session has expired. Please log in again.');
+        }, 100); // Adjust the timeout as needed
       }
     }, [router]);
 

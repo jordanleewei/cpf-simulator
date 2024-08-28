@@ -30,6 +30,13 @@ export default function SchemeTags({
     onChangeSchemes(updatedChecked);
   };
 
+  const handleSelectAll = () => {
+    const allSchemesSelected = allSchemes.sort();
+    setChecked(allSchemesSelected);
+    onChangeSchemes(allSchemesSelected);
+    setOpen(false); // Close the dropdown after selecting all schemes
+  };
+
   const SchemeTag = ({ schemeName }) => {
     return (
       <div className="flex justify-center items-center bg-light-blue px-2 py-1 rounded-lg text-dark-blue scheme-tag">
@@ -70,7 +77,13 @@ export default function SchemeTags({
           {/* dropdown options */}
           {open && (
             <div className="z-10 bg-light-blue absolute top-full left-0 p-2 rounded-b-lg dropdown">
-              <ul className="space-y-3">
+              <button
+                className="w-full text-left py-1 px-2 bg-light-green hover:bg-green-200 rounded"
+                onClick={handleSelectAll}
+              >
+                Select All
+              </button>
+              <ul className="space-y-3 mt-2">
                 {allSchemes.map((scheme) => (
                   <li
                     key={scheme}
@@ -83,8 +96,7 @@ export default function SchemeTags({
                       checked={checked.includes(scheme)}
                       onChange={handleCheckboxChange}
                     />
-                    <label 
-                    className="ml-2">{scheme}</label>
+                    <label className="ml-2">{scheme}</label>
                   </li>
                 ))}
               </ul>

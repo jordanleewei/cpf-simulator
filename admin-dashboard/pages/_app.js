@@ -9,65 +9,43 @@ export default function App({ Component, pageProps }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Override fetch globally to handle 401 responses
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      const token = window.localStorage.getItem("loggedUserToken"); // Retrieve the token separately
+      const token = window.localStorage.getItem("loggedUserToken");
 
-      const [resource, config] = args;
+      const [resource, config = {}] = args;
       const newConfig = {
         ...config,
         headers: {
-          ...config?.headers,
-          Authorization: token ? `Bearer ${token}` : undefined, // Attach token if available
+          ...config.headers,
+          Authorization: token ? `Bearer ${token}` : undefined,
         },
       };
-      return originalFetch(resource, newConfig);
+
+      try {
+        const response = await originalFetch(resource, newConfig);
+
+        if (response.status === 401) {
+          if (response.status === 401) {
+            router.push("/");
+            return Promise.reject(new Error("Unauthorized")); // Stop further processing and reject the promise
+          }          
+        }
+
+        return response;
+      } catch (error) {
+        console.error("Fetch error:", error);
+        return Promise.reject(error);
+      }
     };
 
     const loggedUserJSON = window.localStorage.getItem("loggedUser");
     if (loggedUserJSON) {
       const loggedUser = JSON.parse(loggedUserJSON);
       setUser(loggedUser);
-      handleInactivity(loggedUser);
     }
   }, [router]);
-
-  const handleInactivity = (loggedUser) => {
-    let inactivityTimeout;
-    const inactivityThreshold = 3600000; // 1 hour in milliseconds
-
-    const logoutUser = () => {
-      window.localStorage.removeItem("loggedUser");
-      window.localStorage.removeItem("loggedUserToken"); // Remove the token on logout
-      setUser(null);
-      router.push("/").then(() => {
-        alert("You have been logged out due to inactivity.");
-      });
-    };
-
-    const handleActivity = () => {
-      clearTimeout(inactivityTimeout);
-      inactivityTimeout = setTimeout(logoutUser, inactivityThreshold);
-    };
-
-    const events = ['load', 'mousemove', 'mousedown', 'click', 'scroll', 'keypress'];
-    events.forEach(event => {
-      window.addEventListener(event, handleActivity);
-    });
-
-    const handleUnload = () => {};
-
-    window.addEventListener('beforeunload', handleUnload);
-    handleActivity();
-
-    return () => {
-      events.forEach(event => {
-        window.removeEventListener(event, handleActivity);
-      });
-      window.removeEventListener('beforeunload', handleUnload);
-      clearTimeout(inactivityTimeout);
-    };
-  };
 
   return (
     <div className="login-container">

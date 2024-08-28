@@ -1,27 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-function authenticated() {
-  if (typeof window !== "undefined") {
-    const loggedUserJSON = window.localStorage.getItem("loggedUser");
-    return loggedUserJSON ? true : false;
-  }
-  return false;
-}
 
 export default function isAuth(Component) {
   return function IsAuth(props) {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-      const auth = authenticated();
-      if (!auth) {
-        router.push("/");
-      }
+      const checkAuth = () => {
+        const token = localStorage.getItem("loggedUserToken");
+
+        if (!token) {
+          router.push("/");
+        } else {
+          setIsAuthenticated(true);
+        }
+        setIsLoading(false);
+      };
+
+      checkAuth();
     }, [router]);
 
-    return <Component {...props} />;
+    if (isLoading) {
+      return <div>Loading...</div>; // Show a loading state while checking authentication
+    }
+
+    return <Component {...props} isAuthenticated={isAuthenticated} />;
   };
 }

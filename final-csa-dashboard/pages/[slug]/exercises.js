@@ -1,4 +1,3 @@
-// framework
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -8,7 +7,7 @@ import { ChevronLeft } from "@mui/icons-material";
 // components
 import isAuth from "../../components/isAuth";
 
-function Exercises(user) {
+function Exercises() { // Remove the 'user' parameter
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
@@ -19,14 +18,27 @@ function Exercises(user) {
   useEffect(() => {
     async function getQuestions() {
       const userString = localStorage.getItem("loggedUser");
+
+      if (!userString) {
+        // If there's no user in localStorage, redirect to the login page
+        router.push("/");
+        return;
+      }
+
       const user = JSON.parse(userString);
+
+      if (!user || !user.uuid) {
+        // If user or user.uuid is null/undefined, redirect to the login page
+        router.push("/");
+        return;
+      }
 
       if (router.isReady) {
         const scheme_name = router.query.slug;
         window.localStorage.setItem("schemeName", scheme_name);
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/table/${user.uuid}/${scheme_name}`
+          `${API_URL}/table/${user.uuid}/${scheme_name}`
         );
         const questions = await res.json();
 

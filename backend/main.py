@@ -20,7 +20,6 @@ from config import Base, config
 from sqlalchemy import func, distinct
 from fastapi.middleware.cors import CORSMiddleware
 from ML.openAI import process_response, openAI_response
-import shutil
 import uuid
 import os
 from dotenv import load_dotenv
@@ -52,25 +51,6 @@ app.add_middleware(
     allow_headers=["Authorization"],
 )
 
-# # Middleware to log requests
-# @app.middleware("http")
-# async def log_requests(request: Request, call_next):
-#     logger.info(f"Request from {request.client.host}:{request.client.port}")
-#     logger.info(f"Request origin: {request.headers.get('origin')}")
-#     logger.info(f"Request method: {request.method} {request.url}")
-#     logger.info(f"Request headers: {request.headers}")
-
-#     if request.method in ["POST", "PUT"]:
-#         body = await request.body()
-#         logger.info(f"Request body: {body.decode('utf-8')}")
-
-#     response = await call_next(request)
-
-#     logger.info(f"Response status: {response.status_code}")
-#     logger.info(f"Response headers: {response.headers}")
-
-#     return response
-
 # AWS S3 configuration
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -93,23 +73,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Database initialization
 Base.metadata.create_all(bind=engine)
 
-# JWT token creation
-def create_access_token(data: dict, expires_delta: timedelta = None):
+# JWT token creation with fixed expiration
+def create_access_token(data: dict):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=30)  # Shorter expiry for access token
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def create_refresh_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(hours=6)  # Longer expiry for refresh token
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -148,19 +115,13 @@ async def login_for_access_token(db: Session = Depends(create_session), form_dat
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Issue access and refresh tokens
-    access_token_expires = timedelta(minutes=30)
-    refresh_token_expires = timedelta(hours=6)
-    
+    # Issue access token
     access_token = create_access_token(
-        data={"sub": user.uuid}, expires_delta=access_token_expires
+        data={"sub": user.uuid}
     )
-    refresh_token = create_refresh_token(
-        data={"sub": user.uuid}, expires_delta=refresh_token_expires
-    )
+
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "token_type": "bearer",
         "uuid": user.uuid,
         "email": user.email,
@@ -168,46 +129,6 @@ async def login_for_access_token(db: Session = Depends(create_session), form_dat
         "access_rights": user.access_rights  # Include access_rights directly in the response
     }
 
-@app.post("/refresh-token")
-async def refresh_access_token(refresh_token: str, db: Session = Depends(create_session)):
-    try:
-        # Decode the refresh token
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        # Verify if the user still exists
-        user = db.query(UserModel).filter(UserModel.uuid == user_id).first()
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        # Issue a new access token
-        access_token_expires = timedelta(minutes=30)
-        new_access_token = create_access_token(
-            data={"sub": user.uuid}, expires_delta=access_token_expires
-        )
-
-        return {
-            "access_token": new_access_token,
-            "token_type": "bearer"
-        }
-
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 # Upload questions CSV route (protected by JWT)
 @app.post("/upload-questions-csv", status_code=201)

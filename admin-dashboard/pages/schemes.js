@@ -1,41 +1,53 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import isAuth from "../components/isAuth.jsx"; // Adjust the import path according to your project structure
+
 // components
 import SchemeCard from "../components/SchemeCard";
-import isAuth from "../components/isAuth";
 import DeleteModal from "../components/DeleteModal";
+import { useRouter } from 'next/router';
 
 function Schemes() {
-  // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [schemes, setSchemes] = useState([]);
-  const [originalSchemes, setOriginalSchemes] = useState([]); // Store the original schemes
+  const [originalSchemes, setOriginalSchemes] = useState([]);
   const [editState, setEditState] = useState(false);
   const [deletedSchemes, setDeletedSchemes] = useState([]);
   const [deleteId, setDeleteId] = useState("");
   const [csvFile, setCsvFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
-
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     async function getSchemes() {
       try {
         const res = await fetch(`${API_URL}/scheme`);
-        const schemeData = await res.json();
 
-        const formattedSchemes = schemeData.map((scheme) => ({
-          ...scheme,
-          scheme_name:
-            scheme.scheme_name.charAt(0).toUpperCase() +
-            scheme.scheme_name.slice(1).toLowerCase(),
-          questions: Array.isArray(scheme.questions) ? scheme.questions : [],
-        }));
+        if (res.ok) {
+          const schemeData = await res.json();
 
-        setSchemes(formattedSchemes);
-        setOriginalSchemes(formattedSchemes); // Store the original schemes
+          if (Array.isArray(schemeData)) {
+            const formattedSchemes = schemeData.map((scheme) => ({
+              ...scheme,
+              scheme_name:
+                scheme.scheme_name.charAt(0).toUpperCase() +
+                scheme.scheme_name.slice(1).toLowerCase(),
+              questions: Array.isArray(scheme.questions) ? scheme.questions : [],
+            }));
+
+            setSchemes(formattedSchemes);
+            setOriginalSchemes(formattedSchemes);
+          } else {
+            setSchemes([]);
+          }
+        } else {
+          setSchemes([]);
+        }
       } catch (e) {
         console.log(e);
+        setSchemes([]);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -152,102 +164,111 @@ function Schemes() {
 
   return (
     <div className="schemes-page-container">
-      {/* Header */}
-      <div className="flex flex-row justify-between items-center text-black">
-        <div className="font-bold text-3xl">Schemes Overview</div>
-        {schemes.length > 0 && (
-          <div className="flex justify-end gap-3">
-            {editState ? (
-              <>
+      {/* Show loading state if data is being fetched */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-screen">
+          <p>Loading...</p>
+        </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-row justify-between items-center text-black">
+            <div className="font-bold text-3xl">Schemes Overview</div>
+            {schemes.length > 0 && (
+              <div className="flex justify-end gap-3">
+                {editState ? (
+                  <>
+                    <button
+                      className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                      onClick={() => router.push("/addscheme")}
+                    >
+                      Add Scheme
+                    </button>
+                    <button
+                      className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                      onClick={handleSave}
+                    >
+                      Save
+                    </button>
+                    <button
+                      className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                      onClick={cancelEdit}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
+                    onClick={() => setEditState(true)}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* CSV Upload Section */}
+          <div className="my-4">
+            <input type="file" accept=".csv" onChange={handleFileChange} />
+            <button
+              className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4 ml-3"
+              onClick={handleFileUpload}
+            >
+              Upload Questions CSV
+            </button>
+            {uploadMessage && <p className="mt-2 text-red-500">{uploadMessage}</p>}
+          </div>
+
+          <div className="schemes-container">
+            {schemes.length > 0 ? (
+              schemes.map((scheme, index) => (
+                <SchemeCard
+                  key={scheme.scheme_name}
+                  scheme_name={scheme.scheme_name}
+                  scheme_img={scheme.scheme_admin_img_path}
+                  questions={scheme.questions.length} // Safely access the questions length
+                  scheme_button={true}
+                  editState={editState}
+                  setDeleteId={setDeleteId}
+                  updateSchemeName={(newName) => updateSchemeName(index, newName)} // Pass the update function to the SchemeCard
+                  isDeleted={deletedSchemes.includes(scheme.scheme_name)}
+                  handleDelete={() => handleDelete(scheme.scheme_name)}
+                />
+              ))
+            ) : (
+              <div className="items-center justify-center text-center py-20">
+                <div className="text-xl font-semibold text-gray-600 mb-4">
+                  No Scheme Found
+                </div>
                 <button
                   className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
                   onClick={() => router.push("/addscheme")}
                 >
                   Add Scheme
                 </button>
-                <button
-                  className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                  onClick={handleSave}
-                >
-                  Save
-                </button>
-                <button
-                  className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                  onClick={cancelEdit}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button
-                className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-                onClick={() => setEditState(true)}
-              >
-                Edit
-              </button>
+              </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* CSV Upload Section */}
-      <div className="my-4">
-        <input type="file" accept=".csv" onChange={handleFileChange} />
-        <button
-          className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4 ml-3"
-          onClick={handleFileUpload}
-        >
-          Upload Questions CSV
-        </button>
-        {uploadMessage && <p className="mt-2 text-red-500">{uploadMessage}</p>}
-      </div>
-
-      <div className="schemes-container">
-        {schemes.length > 0 ? (
-          schemes.map((scheme, index) => (
-            <SchemeCard
-              key={scheme.scheme_name}
-              scheme_name={scheme.scheme_name}
-              scheme_img={scheme.scheme_admin_img_path}
-              questions={scheme.questions.length} // Safely access the questions length
-              scheme_button={true}
-              editState={editState}
-              setDeleteId={setDeleteId}
-              updateSchemeName={(newName) => updateSchemeName(index, newName)} // Pass the update function to the SchemeCard
-              isDeleted={deletedSchemes.includes(scheme.scheme_name)}
-              handleDelete={() => handleDelete(scheme.scheme_name)}
-            />
-          ))
-        ) : (
-          <div className="items-center justify-center text-center py-20">
-            <div className="text-xl font-semibold text-gray-600 mb-4">
-              No Scheme Found
+          {/* Delete Modal */}
+          {deleteId && (
+            <div className="w-full h-full flex justify-center items-center fixed top-0 left-0 z-40">
+              <DeleteModal
+                id={deleteId}
+                setId={setDeleteId}
+                handleDelete={() => handleDelete(deleteId)}
+                text={
+                  schemes
+                    .filter((scheme) => scheme.scheme_name === deleteId)
+                    .map((scheme) => scheme.scheme_name)[0]
+                }
+              />
+              <div className="w-screen h-screen bg-gray-500/50 absolute z-30" />
             </div>
-            <button
-              className="bg-dark-green hover:bg-darker-green rounded-md text-white py-2 px-4"
-              onClick={() => router.push("/addscheme")}
-            >
-              Add Scheme
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Delete Modal */}
-      {deleteId && (
-        <div className="w-full h-full flex justify-center items-center fixed top-0 left-0 z-40">
-          <DeleteModal
-            id={deleteId}
-            setId={setDeleteId}
-            handleDelete={() => handleDelete(deleteId)}
-            text={
-              schemes
-                .filter((scheme) => scheme.scheme_name === deleteId)
-                .map((scheme) => scheme.scheme_name)[0]
-            }
-          />
-          <div className="w-screen h-screen bg-gray-500/50 absolute z-30" />
-        </div>
+          )}
+        </>
       )}
     </div>
   );

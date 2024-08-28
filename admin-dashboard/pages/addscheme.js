@@ -15,7 +15,7 @@ function AddScheme() {
   useEffect(() => {
     async function fetchImageUrls() {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/s3-images`);
+        const response = await fetch(`${API_URL}/s3-images`);
         const data = await response.json();
         if (Array.isArray(data.image_urls)) {
           setImageUrls(data.image_urls);
@@ -27,7 +27,7 @@ function AddScheme() {
       }
     }
     fetchImageUrls();
-  }, []);
+  }, [API_URL]);
 
   const handleCancel = () => {
     router.push("/schemes");
@@ -44,13 +44,14 @@ function AddScheme() {
       const standardizedSchemeName = capitalize(schemeName);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/scheme?scheme_name=${encodeURIComponent(
+        `${API_URL}/scheme?scheme_name=${encodeURIComponent(
           standardizedSchemeName
         )}&file_url=${encodeURIComponent(selectedImage)}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("loggedUserToken")}`, // Add token here as well
           },
           body: JSON.stringify({
             scheme_name: standardizedSchemeName,

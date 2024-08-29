@@ -164,12 +164,15 @@ async def upload_questions_csv(
         combined_system_names = ", ".join([name for name, _ in ideal_system_urls if pd.notna(name)])
         combined_system_urls = ", ".join([url for _, url in ideal_system_urls if pd.notna(url)])
 
-        # Check if the scheme exists, if not create it using the add_new_scheme function
+        # Check if the scheme exists, if not create it
         scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
         if not scheme:
             scheme_name, file_url = scheme_name, ''  # You might need to provide a valid file_url here
-            await add_new_scheme(scheme_name=scheme_name, file_url=file_url, db=db, current_user=current_user)
+            add_new_scheme_sync(scheme_name=scheme_name, file_url=file_url, db=db, current_user=current_user)
             scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
+            if not scheme:
+                logger.error(f"Failed to create scheme '{scheme_name}'. Skipping this question.")
+                continue
 
         # Check if the question already exists to avoid duplicates
         existing_question = db.query(QuestionModel).filter(QuestionModel.title == title, QuestionModel.scheme_name == scheme_name).first()
@@ -468,6 +471,7 @@ async def add_new_scheme(
         scheme_name = scheme_name.replace("/", r" or ")
 
     scheme_name = scheme_name[0].upper() + scheme_name[1:].lower()
+    scheme_name = scheme_name.strip()
 
     db_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
     if db_scheme:
@@ -488,6 +492,33 @@ async def add_new_scheme(
             "s3_url": file_url
         }
 
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+def add_new_scheme_sync(scheme_name: str, file_url: str, db: Session, current_user: UserModel):
+    if "/" in scheme_name:
+        scheme_name = scheme_name.replace("/", r" or ")
+
+    scheme_name = scheme_name[0].upper() + scheme_name[1:].lower()
+    scheme_name = scheme_name.strip()
+
+    db_scheme = db.query(SchemeModel).filter(SchemeModel.scheme_name == scheme_name).first()
+    if db_scheme:
+        return {"message": "This is an existing scheme"}
+
+    try:
+        new_scheme = SchemeModel(
+            scheme_name=scheme_name,
+            scheme_csa_img_path=file_url,
+            scheme_admin_img_path=file_url  
+        )
+        db.add(new_scheme)
+        db.commit()
+        return {
+            "message": "Scheme added successfully",
+            "filename": file_url.split('/')[-1],
+            "s3_url": file_url
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

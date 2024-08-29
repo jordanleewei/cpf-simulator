@@ -45,37 +45,34 @@ export default function TableCustomized({ rows }) {
       }
     );
   }
-  {
-    rows.map((row, idx) => {
 
-      return (
-        <tr key={idx}>
-          <td>{row.question_title}</td>
-          <td>{row.scheme_name.scheme_name}</td> {/* Extract the scheme name from the object */}
-          <td>{row.date}</td>
-          <td
-            align="right"
-            className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
-            onClick={() => handleReviewNav(row.attempt_id)}
-          >
-            Click to view attempt
-          </td>
-        </tr>
-
-      );
-    })
+  function handleImprovementNav(improvement_id) {
+    router.push(
+      {
+        pathname: `/${improvement_id}/improvement`,
+        query: {
+          review: true,
+          submit: false,
+          profile: true,
+        },
+      },
+      `/${improvement_id}/improvement`,
+      {
+        shallow: true,
+      }
+    );
   }
 
-
   return (
-    <Root sx={{ maxWidth: "100%", width: "100%", }}>
+    <Root sx={{ maxWidth: "100%", width: "100%" }}>
       <table aria-label="custom pagination table">
         <thead>
           <tr>
-            <th className=" bg-dark-grey">Question</th>
-            <th className=" bg-dark-grey">Scheme</th>
-            <th className=" bg-dark-grey">Time Completed</th>
-            <th className=" bg-dark-grey">Transcript</th>
+            <th className="bg-dark-grey">Question</th>
+            <th className="bg-dark-grey">Scheme</th>
+            <th className="bg-dark-grey">Time Completed</th>
+            <th className="bg-dark-grey">Transcript</th>
+            <th className="bg-dark-grey">Improvement</th> {/* New Improvement Column */}
           </tr>
         </thead>
         <tbody>
@@ -94,12 +91,19 @@ export default function TableCustomized({ rows }) {
               >
                 Click to view attempt
               </td>
+              <td
+                align="right"
+                className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
+                onClick={() => handleImprovementNav(row.question_id)}
+              >
+                View Improvement
+              </td> {/* Improvement Column */}
             </tr>
           ))}
 
           {emptyRows > 0 && (
             <tr style={{ height: 34 * emptyRows }}>
-              <td colSpan={3} aria-hidden />
+              <td colSpan={5} aria-hidden />
             </tr>
           )}
         </tbody>
@@ -107,7 +111,7 @@ export default function TableCustomized({ rows }) {
           <tr>
             <CustomTablePagination
               rowsPerPageOptions={[10]}
-              colSpan={3}
+              colSpan={5} // Updated colSpan to 5 to include the new column
               count={rows.length}
               rowsPerPage={rowsPerPage}
               page={page}
@@ -177,7 +181,6 @@ const Root = styled("div")(
     text-align: left;
     padding: 8px;
   }
-
   `
 );
 

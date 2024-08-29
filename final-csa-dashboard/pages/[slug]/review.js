@@ -32,9 +32,14 @@ function ReviewPage({ user }) {
         const attemptData = await res.json();
         console.log("attempt", attemptData);
 
-        // Convert system_name and system_url to arrays
-        attemptData.system_name = attemptData.system_name.split(',').map(item => item.trim());
-        attemptData.system_url = attemptData.system_url.split(',').map(item => item.trim());
+        // Safely handle system_name and system_url
+        attemptData.system_name = attemptData.system_name
+          ? attemptData.system_name.split(',').map(item => item.trim())
+          : []; // default to an empty array if system_name is undefined or null
+
+        attemptData.system_url = attemptData.system_url
+          ? attemptData.system_url.split(',').map(item => item.trim())
+          : []; // default to an empty array if system_url is undefined or null
 
         setAttempt(attemptData);
       }

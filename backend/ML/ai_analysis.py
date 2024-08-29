@@ -1,9 +1,8 @@
 import os
-import json
 from dotenv import load_dotenv
 from langchain_community.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
 
 load_dotenv()
 
@@ -12,51 +11,31 @@ def analyse_improvements(data):
     llm = ChatOpenAI(
         temperature=1,
         openai_api_key=os.getenv("OPENAI_KEY"),
-        model_name="gpt-4"
+        model_name="gpt-4o-mini"
     )
     
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=False)
-    
-    # This is just for context, not used for retrieval but you can include it
-    retriever = None
-
-    # Initialize the ConversationalRetrievalChain (if needed, for more complex scenarios)
-    qa = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=retriever,
-        memory=memory
-    )
-    
-    # Extracting attributes from data
-    question = data.get("question")
-    ideal = data.get("ideal")
-    ideal_system_name = data.get("ideal_system_name")
-    ideal_system_url = data.get("ideal_system_url")
-    last_attempt = data.get("last_attempt")
-    previous_attempt = data.get("previous_attempt")
-
-    # Constructing the message for the prompt
-    improvement_message = f"""
+    # Define the prompt template
+    prompt_template = """
     You are provided with two attempts by a user for answering a question. Each attempt is scored on accuracy, precision, and tone. 
     The ideal answer to the question is also provided. Analyze the user's improvement across these attempts.
-    
+
     Question: {question}
 
     First Attempt:
-    Answer: {previous_attempt['answer']}
-    Accuracy Score: {previous_attempt['accuracy_score']}
-    Precision Score: {previous_attempt['precision_score']}
-    Tone Score: {previous_attempt['tone_score']}
-    System Name: {previous_attempt['system_name']}
-    System URL: {previous_attempt['system_url']}
+    Answer: {previous_answer}
+    Accuracy Score: {previous_accuracy_score}
+    Precision Score: {previous_precision_score}
+    Tone Score: {previous_tone_score}
+    System Name: {previous_system_name}
+    System URL: {previous_system_url}
     
     Second Attempt:
-    Answer: {last_attempt['answer']}
-    Accuracy Score: {last_attempt['accuracy_score']}
-    Precision Score: {last_attempt['precision_score']}
-    Tone Score: {last_attempt['tone_score']}
-    System Name: {last_attempt['system_name']}
-    System URL: {last_attempt['system_url']}
+    Answer: {last_answer}
+    Accuracy Score: {last_accuracy_score}
+    Precision Score: {last_precision_score}
+    Tone Score: {last_tone_score}
+    System Name: {last_system_name}
+    System URL: {last_system_url}
     
     Ideal Answer:
     {ideal}
@@ -65,46 +44,53 @@ def analyse_improvements(data):
     
     Please analyze the user's improvement in accuracy, precision, and tone, and provide detailed feedback about the improvements and areas that still need work.
     """
+
+    # Create the PromptTemplate object
+    prompt = PromptTemplate(
+        input_variables=[
+            "question", "previous_answer", "previous_accuracy_score", "previous_precision_score", "previous_tone_score", 
+            "previous_system_name", "previous_system_url", "last_answer", "last_accuracy_score", 
+            "last_precision_score", "last_tone_score", "last_system_name", "last_system_url", "ideal", 
+            "ideal_system_name", "ideal_system_url"
+        ],
+        template=prompt_template
+    )
+
+    # Initialize the LLMChain with the prompt template and LLM
+    qa = LLMChain(
+        llm=llm,
+        prompt=prompt
+    )
     
-    # Run the OpenAI model with this prompt
-    result = qa.run({"question": improvement_message})
+    # Extracting attributes from data
+    improvement_message = {
+        "question": data.get("question"),
+        "previous_answer": data.get("previous_attempt")['answer'],
+        "previous_accuracy_score": data.get("previous_attempt")['accuracy_score'],
+        "previous_precision_score": data.get("previous_attempt")['precision_score'],
+        "previous_tone_score": data.get("previous_attempt")['tone_score'],
+        "previous_system_name": data.get("previous_attempt")['system_name'],
+        "previous_system_url": data.get("previous_attempt")['system_url'],
+        "last_answer": data.get("last_attempt")['answer'],
+        "last_accuracy_score": data.get("last_attempt")['accuracy_score'],
+        "last_precision_score": data.get("last_attempt")['precision_score'],
+        "last_tone_score": data.get("last_attempt")['tone_score'],
+        "last_system_name": data.get("last_attempt")['system_name'],
+        "last_system_url": data.get("last_attempt")['system_url'],
+        "ideal": data.get("ideal"),
+        "ideal_system_name": data.get("ideal_system_name"),
+        "ideal_system_url": data.get("ideal_system_url"),
+    }
+    
+    # Run the OpenAI model with the constructed input
+    result = qa.run(improvement_message)
+
+    # Check if the result is too long and was cut off
+    if result.endswith("..."):
+        # If the output is cut off, you may need to continue the conversation with the model
+        continuation_prompt = "Please continue where you left off."
+        continuation_result = qa.run(continuation_prompt)
+        result += continuation_result
 
     # Return the result from OpenAI as feedback
     return result
-
-
-# Simulate the previous and last attempts, and other data
-# last_attempt = {
-#     "answer": "Paris is the capital of France.",
-#     "accuracy_score": 90,
-#     "precision_score": 85,
-#     "tone_score": 88,
-#     "system_name": "System A",
-#     "system_url": "http://example.com/systemA"
-# }
-
-# previous_attempt = {
-#     "answer": "I believe the capital of France is Paris.",
-#     "accuracy_score": 85,
-#     "precision_score": 78,
-#     "tone_score": 85,
-#     "system_name": "System A",
-#     "system_url": "http://example.com/systemA"
-# }
-
-# question_details = "What is the capital of France?"
-# ideal = "The capital of France is Paris."
-# ideal_system_name = "System A"
-# ideal_system_url = "http://example.com/systemA"
-
-# # Call the function to analyze improvements using OpenAI
-# feedback = analyse_improvements(
-#     last_attempt, 
-#     previous_attempt, 
-#     question_details, 
-#     ideal, 
-#     ideal_system_name, 
-#     ideal_system_url
-# )
-
-# print(feedback)

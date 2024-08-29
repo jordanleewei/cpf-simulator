@@ -118,9 +118,14 @@ function Schemes() {
           console.error(`Failed to delete scheme ${schemeName}`);
         }
       }
-
+  
       // Save updated scheme names to the backend
       for (let i = 0; i < schemes.length; i++) {
+        // Skip the update if the scheme was deleted
+        if (deletedSchemes.includes(originalSchemes[i].scheme_name)) {
+          continue;
+        }
+  
         if (schemes[i].scheme_name !== originalSchemes[i].scheme_name) {
           try {
             const res = await fetch(
@@ -133,7 +138,7 @@ function Schemes() {
                 body: JSON.stringify({ new_scheme_name: schemes[i].scheme_name }),
               }
             );
-
+  
             if (!res.ok) {
               console.error(
                 `Failed to update scheme name ${originalSchemes[i].scheme_name}`
@@ -144,7 +149,7 @@ function Schemes() {
           }
         }
       }
-
+  
       setDeletedSchemes([]);
       setDeleteId("");
       setOriginalSchemes(schemes); // Set originalSchemes to reflect the latest saved schemes

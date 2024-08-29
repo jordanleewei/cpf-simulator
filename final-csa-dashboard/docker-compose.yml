@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  final-csa-dashboard:
+    build:
+      context: ./final-csa-dashboard  # Correct context path
+      dockerfile: Dockerfile
+    image: cpf_simulator_trainee_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_API_URL: https://backendapi.ccutrainingsimulator.com
+    volumes:
+      - ./final-csa-dashboard:/final-csa-dashboard  # Correct volume mount
+    restart: unless-stopped

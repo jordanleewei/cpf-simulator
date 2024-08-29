@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import isAuth from "../components/isAuth.jsx"; // Adjust the import path according to your project structure
 import { useRouter } from "next/navigation";
 import SchemeTags from "../components/SchemeTags";
 import SchemeFilter from "../components/SchemeFilter";
@@ -32,12 +33,6 @@ function MyTeam() {
       // Retrieve the token from localStorage
       const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
       const token = loggedUser ? loggedUser.access_token : null;
-
-      if (!token) {
-        console.log("No token found, redirecting to home.");
-        router.push('/');
-        return;
-      }
 
       try {
         // Fetch team members
@@ -79,7 +74,6 @@ function MyTeam() {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        router.push('/');
       }
     };
 
@@ -463,4 +457,4 @@ function MyTeam() {
   );
 }
 
-export default MyTeam;
+export default isAuth(MyTeam);

@@ -128,6 +128,8 @@ function ImprovementPage({ user }) {
                         <h3 className="font-bold">Overall Feedback:</h3>
                         <ReactMarkdown>{improvement.improvement_feedback}</ReactMarkdown>
                     </div>
+                    {/* Commenting out the Improvement Scores graph */}
+                    {/*
                     <h3 className="px-4 py-2 w-auto h-max-content flex justify-between items-center font-bold">
                         Improvement Scores
                     </h3>
@@ -143,6 +145,7 @@ function ImprovementPage({ user }) {
                             </div>
                         ))}
                     </div>
+                    */}
                     <div className="pl-4 pr-4 mb-4">
                         <h3 className="font-bold">Last Updated:</h3>
                         <p>{improvement.last_updated}</p>

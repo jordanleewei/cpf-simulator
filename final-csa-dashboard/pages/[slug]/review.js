@@ -153,7 +153,7 @@ function ReviewPage({ user }) {
           </div>
           <div className="pl-4 pr-4 mb-4">
             <h3 className="font-bold">Your Answer:</h3>
-            <p>{attempt.answer}</p>
+            <p style={{ whiteSpace: "pre-wrap" }}>{attempt.answer}</p>
           </div>
           <div className="pl-4 pr-4 mb-4">
             <h3 className="font-bold">Your System Name Answer:</h3>

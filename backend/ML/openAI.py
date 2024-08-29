@@ -85,7 +85,7 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
 
     # Define model
     llm = ChatOpenAI(
-        temperature=1,
+        temperature=0.3,
         openai_api_key=os.getenv("OPENAI_KEY"),
         model_name="gpt-4o-mini"
     )

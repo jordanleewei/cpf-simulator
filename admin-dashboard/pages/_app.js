@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from 'next/router';
 
 export default function App({ Component, pageProps }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(""); // Initialize as an empty string
   const router = useRouter();
 
   useEffect(() => {
@@ -27,10 +27,11 @@ export default function App({ Component, pageProps }) {
         const response = await originalFetch(resource, newConfig);
 
         if (response.status === 401) {
-          if (response.status === 401) {
-            router.push("/");
-            return Promise.reject(new Error("Unauthorized")); // Stop further processing and reject the promise
-          }          
+          localStorage.removeItem("loggedUser");
+          localStorage.removeItem("loggedUserToken");
+          setUser(""); // Clear user state
+          router.push("/");
+          return Promise.reject(new Error("Unauthorized")); // Stop further processing and reject the promise
         }
 
         return response;
@@ -44,6 +45,8 @@ export default function App({ Component, pageProps }) {
     if (loggedUserJSON) {
       const loggedUser = JSON.parse(loggedUserJSON);
       setUser(loggedUser);
+    } else {
+      setUser(""); // Set user as an empty string if no user is logged in
     }
   }, [router]);
 

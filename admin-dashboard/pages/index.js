@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
@@ -9,7 +9,14 @@ export default function Login({ setUser }) {
   const [notification, setNotification] = useState("");
 
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL; 
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+  useEffect(() => {
+    const loggedUserToken = localStorage.getItem("loggedUserToken");
+    if (loggedUserToken) {
+      router.push("/myteam");
+    }
+  }, [router]);
 
   function handleNotification(noti) {
     setNotification(noti);
@@ -18,7 +25,7 @@ export default function Login({ setUser }) {
 
   async function onSubmit(event) {
     event.preventDefault();
-  
+
     try {
       const res = await fetch(`${API_URL}/token`, {
         method: "POST",
@@ -30,12 +37,12 @@ export default function Login({ setUser }) {
           password: password,
         }),
       });
-  
+
       if (!res.ok) {
         handleNotification("Invalid email or password");
         return;
       }
-  
+
       const data = await res.json();
       if (data.access_rights.toLowerCase() !== "admin") {
         handleNotification("User does not have admin access");
@@ -70,7 +77,7 @@ export default function Login({ setUser }) {
           </div>
           <div className="icon-input pt-2 flex items-center">
             <input
-              type={isPasswordVisible ? "text" : "password"} 
+              type={isPasswordVisible ? "text" : "password"}
               id="password"
               name="password"
               placeholder="Enter your Password"

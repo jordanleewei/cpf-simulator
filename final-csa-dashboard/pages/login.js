@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
 export default function Login({ setUser }) {
-  // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,10 +37,15 @@ export default function Login({ setUser }) {
       }
 
       const data = await res.json();
-      window.localStorage.setItem("loggedUser", JSON.stringify(data));
-      setUser(data);
 
-      router.push("/profile");
+      // Ensure data is correctly retrieved before storing it
+      if (data) {
+        window.localStorage.setItem("loggedUser", JSON.stringify(data));
+        setUser(data);
+
+        // Navigate to profile page only after successful login
+        router.push("/profile");
+      }
     } catch (error) {
       console.error("Login error:", error);
       handleNotification("An error occurred. Please try again.");

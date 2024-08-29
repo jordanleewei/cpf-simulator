@@ -1,5 +1,5 @@
-from sqlalchemy import Integer, Column, ForeignKey, String, DateTime, String
-from sqlalchemy.orm import Mapped
+from sqlalchemy import Integer, Column, ForeignKey, String, DateTime
+from sqlalchemy.orm import Mapped, relationship
 from config import Base
 import uuid
 import datetime
@@ -11,7 +11,6 @@ def generate_date():
     current_date = datetime.datetime.now()
     return current_date.strftime('%Y-%m-%d %H:%M')
 
-
 class AttemptModel(Base):
     __tablename__ = "attempt"
     attempt_id: Mapped[str] = Column(String(255), primary_key=True, default=generate_uuid)
@@ -21,16 +20,16 @@ class AttemptModel(Base):
     date: Mapped[str] = Column(String(255), default=generate_date, nullable=False)
     system_name: Mapped[str] = Column(String(3000), nullable=False)
     system_url: Mapped[str] = Column(String(3000), nullable=False)
+
     # scores
     precision_score: Mapped[int] = Column(Integer, nullable=False)
     accuracy_score: Mapped[int] = Column(Integer, nullable=False)
     tone_score: Mapped[int] = Column(Integer, nullable=False)
     accuracy_feedback: Mapped[str] = Column(String(1000), nullable=False)
-    precision_feedback: Mapped[int] = Column(String(1000), nullable=False)
+    precision_feedback: Mapped[str] = Column(String(1000), nullable=False)
     tone_feedback: Mapped[str] = Column(String(1000), nullable=False)
     feedback: Mapped[str] = Column(String(3000), nullable=False)
-    
-    
+
     def to_dict(self):
         return {
             "attempt_id": self.attempt_id,

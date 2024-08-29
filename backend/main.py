@@ -9,23 +9,26 @@ from models.user import UserModel
 from models.attempt import AttemptModel
 from models.scheme import SchemeModel
 from models.question import QuestionModel
+from models.ai_improvements import AIImprovementsModel
 from models.association_tables import user_scheme_association
 from session import create_session, engine, open_session
-from schemas.attempt import AttemptBase
+from schemas.attempt import AttemptCreate, AttemptResponse, AttemptBase
 from schemas.user import UserBase, UserInput, UserResponseSchema
 from schemas.scheme import SchemeBase, SchemeInput
 from schemas.question import QuestionBase
+from schemas.ai_improvements import AIImprovementsBase
 from schemas.table import TableBase
 from config import Base, config
 from sqlalchemy import func, distinct
 from fastapi.middleware.cors import CORSMiddleware
 from ML.openAI import process_response, openAI_response
+from ML.ai_analysis import analyse_improvements
 import uuid
 import os
 from dotenv import load_dotenv
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import boto3
 import pandas as pd
 from io import StringIO
@@ -596,14 +599,18 @@ async def delete_scheme(
     if not db_scheme:
         raise HTTPException(status_code=404, detail="Scheme not found")
     
+    # Delete related attempts and questions
     db.query(AttemptModel).filter(AttemptModel.question_id.in_(
         db.query(QuestionModel.question_id).filter(QuestionModel.scheme_name == scheme_name)
     )).delete(synchronize_session=False)
+
+    db.query(QuestionModel).filter(QuestionModel.scheme_name == scheme_name).delete(synchronize_session=False)
     
+    # Delete scheme itself
     db.delete(db_scheme)
     db.commit()
 
-    return JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions, attempts, and stored files."}, status_code=201)
+    return JSONResponse(content={"message": f"Scheme '{scheme_name}' deleted successfully along with related questions and attempts."}, status_code=200)
 
 @app.put("/scheme/update-name/{old_scheme_name}", status_code=status.HTTP_200_OK)
 async def update_scheme_name(
@@ -639,15 +646,19 @@ async def update_scheme_name(
         db.add(new_scheme)
         db.commit()
 
+        # Update associations
+        db.query(user_scheme_association).filter(user_scheme_association.c.scheme_table_name == old_scheme_name).update(
+            {"scheme_table_name": new_scheme_name}
+        )
+        db.commit()
+
         # Update the `question` table to reference the new scheme
         db.query(QuestionModel).filter(QuestionModel.scheme_name == old_scheme_name).update(
             {"scheme_name": new_scheme_name}
         )
-
-        # Commit the changes to the `question` table
         db.commit()
 
-        # Finally, delete the old scheme
+        # Delete the old scheme
         db.query(SchemeModel).filter(SchemeModel.scheme_name == old_scheme_name).delete()
         db.commit()
 
@@ -890,20 +901,21 @@ import logging
 
 @app.post("/attempt", status_code=status.HTTP_201_CREATED)
 async def create_attempt(
-    schema: AttemptBase, 
+    schema: AttemptCreate, 
     db: Session = Depends(create_session), 
     current_user: UserModel = Depends(get_current_user)
 ):
     logging.info("Starting create_attempt function")
     
     try:
-        inputs = dict(schema)
+        inputs = schema.dict()  # Convert the Pydantic model to a dictionary
         db_question = db.query(QuestionModel).filter(QuestionModel.question_id == inputs['question_id']).first()
         
         if not db_question: 
             logging.error("Question not found")
             raise HTTPException(status_code=404, detail="Question does not exist")
         
+        # Retrieve question details for OpenAI processing
         question = db_question.question_details
         ideal = db_question.ideal
         ideal_system_name = db_question.ideal_system_name
@@ -911,6 +923,7 @@ async def create_attempt(
         
         logging.info("Question details retrieved successfully")
         
+        # Process the response using OpenAI
         response = openAI_response(
             question=question, 
             response=inputs['answer'],
@@ -923,19 +936,47 @@ async def create_attempt(
         
         logging.info("Response from openAI_response obtained")
         
+        # Process the AI response
         response_data = process_response(response)
         inputs.update(response_data)
         
+        # Create a new Attempt record
         db_attempt = AttemptModel(**inputs)
         db.add(db_attempt)
         db.commit()
         
         logging.info("Attempt created successfully")
-        return db_attempt.attempt_id
+
+        # Fetch all previous attempts related to the question, excluding the current one
+        previous_attempts = db.query(AttemptModel).filter(
+            AttemptModel.question_id == inputs['question_id'],
+            AttemptModel.attempt_id != db_attempt.attempt_id  # Exclude the current attempt
+        ).order_by(AttemptModel.date.desc()).all()
+
+        # Check if there are enough previous attempts to update AI improvements
+        if len(previous_attempts) < 1:
+            # Create a new AI improvement record if there is only one attempt
+            logging.info(f"Not enough attempts to update AI improvement, creating new record for question ID {inputs['question_id']}")
+            ai_improvement = await create_ai_improvement(
+                question_id=inputs['question_id'], 
+                last_attempt=db_attempt, 
+                db=db
+            )
+        else:
+            # Update the AI improvement record
+            logging.info(f"Updating AI improvement for question ID {inputs['question_id']}")
+            ai_improvement = await update_ai_improvement(
+                question_id=inputs['question_id'], 
+                last_attempt=db_attempt, 
+                db=db
+            )
+
+        return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": ai_improvement.ai_improvements_id}
     
     except Exception as e:
         logging.error(f"Failed to create attempt: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create attempt: {str(e)}")
+
 
 @app.get("/attempt/average_scores/user/{user_id}", status_code=200)
 async def get_user_average_scores(
@@ -1026,6 +1067,304 @@ async def get_user_average_scores(
             })
 
     return scheme_average_scores
+
+## AI IMPROVEMENT ROUTES ##
+@app.post("/ai-improvement/create/{question_id}", status_code=status.HTTP_201_CREATED)
+async def create_ai_improvement(
+    question_id: str,
+    last_attempt: AttemptResponse, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    logging.info(f"Starting create_ai_improvement function for question_id: {question_id}")
+    
+    try:
+        # Fetch the question associated with the question_id
+        db_question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
+
+        if not db_question:
+            raise HTTPException(status_code=404, detail="Question does not exist")
+        
+        # Fetch all previous attempts related to the question, excluding the current one
+        attempts = db.query(AttemptModel).filter(
+            AttemptModel.question_id == question_id,
+            AttemptModel.attempt_id != last_attempt.attempt_id  # Exclude the current attempt
+        ).order_by(AttemptModel.date.desc()).all()
+
+        if len(attempts) < 1:
+            raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
+
+        # Fetch the second last attempt for comparison
+        second_last_attempt = attempts[0]
+
+        # Calculate improvements based on accuracy, precision, and tone
+        accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
+        precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
+        tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
+
+        # Generate user improvement feedback based on improvements
+        improvement_data = {
+            "question": db_question.question_details,
+            "ideal": db_question.ideal,
+            "ideal_system_name": db_question.ideal_system_name,
+            "ideal_system_url": db_question.ideal_system_url,
+            "last_attempt": last_attempt.to_dict(),
+            "previous_attempt": second_last_attempt.to_dict()
+        }
+
+        # Call the external AI analysis function to generate feedback
+        improvement_feedback = analyse_improvements(improvement_data)
+
+        new_ai_improvement = AIImprovementsModel(
+            question_id=question_id,
+            user_id=last_attempt.user_id,
+            accuracy_improvement=accuracy_improvement,
+            precision_improvement=precision_improvement,
+            tone_improvement=tone_improvement,
+            improvement_feedback=improvement_feedback,
+            last_attempt_id=last_attempt.attempt_id,
+            previous_attempt_id=second_last_attempt.attempt_id,
+            updated=datetime.now()
+        )
+
+        db.add(new_ai_improvement)
+        db.commit()
+        db.refresh(new_ai_improvement)
+        
+        logging.info(f"AI improvement created for question_id: {question_id}")
+
+        return new_ai_improvement
+
+    except Exception as e:
+        logging.error(f"Failed to create AI improvement: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create AI improvement: {str(e)}")
+    
+@app.put("/ai-improvement/update/{question_id}", status_code=status.HTTP_200_OK)
+async def update_ai_improvement(
+    question_id: str,
+    last_attempt: AttemptResponse, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    logging.info(f"Starting update_ai_improvement function for question_id: {question_id}")
+    
+    try:
+        # Fetch the question associated with the question_id
+        db_question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
+
+        if not db_question:
+            raise HTTPException(status_code=404, detail="Question does not exist")
+        
+        # Fetch all previous attempts related to the question, excluding the current one
+        attempts = db.query(AttemptModel).filter(
+            AttemptModel.question_id == question_id,
+            AttemptModel.attempt_id != last_attempt.attempt_id  # Exclude the current attempt
+        ).order_by(AttemptModel.date.desc()).all()
+
+        if len(attempts) < 1:
+            raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
+
+        # Fetch the second last attempt for comparison
+        second_last_attempt = attempts[0]
+
+        # Calculate improvements based on accuracy, precision, and tone
+        accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
+        precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
+        tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
+
+        # Generate user improvement feedback based on improvements
+        improvement_data = {
+            "question": db_question.question_details,
+            "ideal": db_question.ideal,
+            "ideal_system_name": db_question.ideal_system_name,
+            "ideal_system_url": db_question.ideal_system_url,
+            "last_attempt": last_attempt.to_dict(),
+            "previous_attempt": second_last_attempt.to_dict()
+        }
+
+        # Call the external AI analysis function to generate feedback
+        improvement_feedback = analyse_improvements(improvement_data)
+
+        # Check if an AI improvement record already exists for the question
+        ai_improvement_record = db.query(AIImprovementsModel).filter(AIImprovementsModel.question_id == question_id).first()
+
+        if not ai_improvement_record:
+            raise HTTPException(status_code=404, detail="AI improvement record not found for the specified question.")
+        
+        # Update the existing AI improvement record
+        ai_improvement_record.accuracy_improvement = accuracy_improvement
+        ai_improvement_record.precision_improvement = precision_improvement
+        ai_improvement_record.tone_improvement = tone_improvement
+        ai_improvement_record.improvement_feedback = improvement_feedback
+        ai_improvement_record.updated = datetime.now()
+
+        db.commit()
+        db.refresh(ai_improvement_record)
+        logging.info(f"AI improvement updated for question_id: {question_id}")
+
+        return ai_improvement_record
+
+    except Exception as e:
+        logging.error(f"Failed to update AI improvement: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update AI improvement: {str(e)}")
+
+# Route to get AI improvement for a question
+@app.get("/ai-improvement/{question_id}", status_code=status.HTTP_200_OK)
+async def get_ai_improvement(
+    question_id: str,
+    db: Session = Depends(create_session)
+):
+    logging.info(f"Fetching AI improvement for question_id: {question_id}")
+    
+    ai_improvement_record = db.query(AIImprovementsModel).filter(AIImprovementsModel.question_id == question_id).first()
+
+    if not ai_improvement_record:
+        raise HTTPException(status_code=404, detail="AI improvement record not found for the specified question.")
+    
+    # Generate a single feedback string
+    feedback = (
+        f"Your last attempt had an accuracy score of {ai_improvement_record.last_attempt.accuracy_score}, "
+        f"precision score of {ai_improvement_record.last_attempt.precision_score}, "
+        f"and tone score of {ai_improvement_record.last_attempt.tone_score}. "
+        f"The attempt before that had an accuracy score of {ai_improvement_record.previous_attempt.accuracy_score}, "
+        f"precision score of {ai_improvement_record.previous_attempt.precision_score}, "
+        f"and tone score of {ai_improvement_record.previous_attempt.tone_score}. "
+        f"Your accuracy improved by {ai_improvement_record.accuracy_improvement}, "
+        f"precision improved by {ai_improvement_record.precision_improvement}, "
+        f"and tone improved by {ai_improvement_record.tone_improvement}."
+    )
+
+    # Prepare the response
+    response = {
+        "feedback": feedback,  # Replace separate fields with the feedback string
+        "last_updated": ai_improvement_record.updated,
+        "improvement_feedback": ai_improvement_record.improvement_feedback  
+    }
+
+    return response
+
+## For testing purposes ##
+@app.post("/ai-improvement/retroactive/{question_id}")
+async def retroactively_create_ai_improvements(
+    question_id: str,
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    logging.info(f"Retroactively creating AI improvements for question_id: {question_id}")
+    
+    # Fetch the question
+    question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Question does not exist")
+
+    # Fetch all attempts for the question
+    attempts = db.query(AttemptModel).filter(AttemptModel.question_id == question_id).order_by(AttemptModel.date.desc()).all()
+
+    if len(attempts) >= 2:
+        last_attempt = attempts[0]
+        second_last_attempt = attempts[1]
+
+        # Calculate improvements based on accuracy, precision, and tone
+        accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
+        precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
+        tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
+
+        improvement_data = {
+            "question": question.question_details,
+            "ideal": question.ideal,
+            "ideal_system_name": question.ideal_system_name,
+            "ideal_system_url": question.ideal_system_url,
+            "last_attempt": last_attempt.to_dict(),
+            "previous_attempt": second_last_attempt.to_dict()
+        }
+
+        # Call the external AI analysis function to generate feedback
+        improvement_feedback = analyse_improvements(improvement_data)
+
+        # Create AI improvement record
+        ai_improvement = AIImprovementsModel(
+            question_id=question_id,
+            user_id=last_attempt.user_id,
+            last_attempt_id=last_attempt.attempt_id,
+            previous_attempt_id=second_last_attempt.attempt_id,
+            accuracy_improvement=accuracy_improvement,
+            precision_improvement=precision_improvement,
+            tone_improvement=tone_improvement,
+            updated=datetime.now(),
+            improvement_feedback=improvement_feedback
+        )
+
+        db.add(ai_improvement)
+        db.commit()
+
+        logging.info(f"AI Improvement created for question_id: {question_id}")
+        return ai_improvement
+
+    else:
+        raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
+    
+@app.put("/ai-improvement/retroactive/{question_id}")
+async def retroactively_update_ai_improvements(
+    question_id: str,
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    logging.info(f"Retroactively updating AI improvements for question_id: {question_id}")
+    
+    # Fetch the question
+    question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Question does not exist")
+
+    # Fetch all attempts for the question
+    attempts = db.query(AttemptModel).filter(AttemptModel.question_id == question_id).order_by(AttemptModel.date.desc()).all()
+
+    if len(attempts) >= 2:
+        last_attempt = attempts[0]
+        second_last_attempt = attempts[1]
+
+        # Calculate improvements based on accuracy, precision, and tone
+        accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
+        precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
+        tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
+
+        improvement_data = {
+            "question": question.question_details,
+            "ideal": question.ideal,
+            "ideal_system_name": question.ideal_system_name,
+            "ideal_system_url": question.ideal_system_url,
+            "last_attempt": last_attempt.to_dict(),
+            "previous_attempt": second_last_attempt.to_dict()
+        }
+
+        # Call the external AI analysis function to generate feedback
+        improvement_feedback = analyse_improvements(improvement_data)
+
+        # Check if an AI improvement record already exists
+        ai_improvement = db.query(AIImprovementsModel).filter(AIImprovementsModel.question_id == question_id).first()
+
+        if ai_improvement:
+            # Update the existing AI improvement record
+            ai_improvement.last_attempt_id = last_attempt.attempt_id
+            ai_improvement.previous_attempt_id = second_last_attempt.attempt_id
+            ai_improvement.accuracy_improvement = accuracy_improvement
+            ai_improvement.precision_improvement = precision_improvement
+            ai_improvement.tone_improvement = tone_improvement
+            ai_improvement.updated = datetime.now()
+            ai_improvement.improvement_feedback = improvement_feedback
+
+            db.commit()
+
+            logging.info(f"AI Improvement updated for question_id: {question_id}")
+            return ai_improvement
+
+        else:
+            raise HTTPException(status_code=404, detail="AI improvement record does not exist for this question.")
+
+    else:
+        raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
 
 ## S3 BUCKET ROUTES ##
 def get_s3_image_urls(bucket_name, prefix):

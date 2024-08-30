@@ -147,7 +147,7 @@ function Profile() {
             <h3 className="pl-5 font-bold">Practice Details</h3>
             {attempts.length > 0 ? (
               <div className="rounded-lg py-4 px-4 h-full flex relative">
-                <CustomTable rows={attempts} />
+                <CustomTable rows={attempts} user_id={userProfile.uuid} />
                 <button
                   type="button"
                   className="absolute -top-7 right-4 bg-dark-green hover:bg-darker-green text-white py-1 px-3 rounded flex items-center"

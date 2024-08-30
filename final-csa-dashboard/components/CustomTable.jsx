@@ -46,23 +46,6 @@ export default function TableCustomized({ rows }) {
     );
   }
 
-  function handleImprovementNav(improvement_id) {
-    router.push(
-      {
-        pathname: `/${improvement_id}/improvement`,
-        query: {
-          review: true,
-          submit: false,
-          profile: true,
-        },
-      },
-      `/${improvement_id}/improvement`,
-      {
-        shallow: true,
-      }
-    );
-  }
-
   return (
     <Root sx={{ maxWidth: "100%", width: "100%" }}>
       <table aria-label="custom pagination table">
@@ -72,7 +55,6 @@ export default function TableCustomized({ rows }) {
             <th className="bg-dark-grey">Scheme</th>
             <th className="bg-dark-grey">Time Completed</th>
             <th className="bg-dark-grey">Transcript</th>
-            <th className="bg-dark-grey">Improvement</th> {/* New Improvement Column */}
           </tr>
         </thead>
         <tbody>
@@ -91,19 +73,12 @@ export default function TableCustomized({ rows }) {
               >
                 Click to view attempt
               </td>
-              <td
-                align="right"
-                className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
-                onClick={() => handleImprovementNav(row.question_id)}
-              >
-                View Improvement
-              </td> {/* Improvement Column */}
             </tr>
           ))}
 
           {emptyRows > 0 && (
             <tr style={{ height: 34 * emptyRows }}>
-              <td colSpan={5} aria-hidden />
+              <td colSpan={4} aria-hidden />
             </tr>
           )}
         </tbody>
@@ -111,7 +86,7 @@ export default function TableCustomized({ rows }) {
           <tr>
             <CustomTablePagination
               rowsPerPageOptions={[10]}
-              colSpan={5} // Updated colSpan to 5 to include the new column
+              colSpan={4} // Updated colSpan to 4 after removing the Improvement column
               count={rows.length}
               rowsPerPage={rowsPerPage}
               page={page}

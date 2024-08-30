@@ -20,7 +20,7 @@ build_and_push() {
     echo "Building Docker image for $service_name..."
 
     # Build the Docker image using docker-compose
-    docker-compose build $service_name
+    docker compose build $service_name
 
     # Tag the Docker image
     docker tag $image_name:latest $ECR_URL/$image_name:latest

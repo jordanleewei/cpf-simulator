@@ -1,5 +1,4 @@
 // user-dashboard/pages/index.js
-// framework
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import Link from 'next/link';
@@ -13,51 +12,17 @@ import feedbackpage from "../public/feedbackpage.png";
 import SchemeCard from "../components/SchemeCard";
 
 export default function Home() {
-  const [schemes, setSchemes] = useState([]);
-  const router = useRouter();
-  // Get API URL from environment variables
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-
-  useEffect(() => {
-    async function getSchemes() {
-      try {
-        const res = await fetch(`${API_URL}/scheme`);
-        const schemeData = await res.json();
-        // Ensure schemeData is an array before setting the state
-        setSchemes(Array.isArray(schemeData) ? schemeData : []);
-      } catch (e) {
-        console.log(e);
-      }
-    }
-
-    getSchemes();
-  }, []);
-
-  const loginUser = async (email, password) => {
-    try {
-      const res = await fetch(`${API_URL}/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          username: email,
-          password: password,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Login failed");
-      }
-
-      const data = await res.json();
-      // Save user data and token to localStorage
-      window.localStorage.setItem("loggedUser", JSON.stringify(data));
-      router.push('/dashboard'); // Redirect to dashboard after successful login
-    } catch (error) {
-      console.error("Error during login:", error);
-    }
-  };
+  const predefinedSchemes = [
+    "Account closure or withdrawal",
+    "Careshield life",
+    "Dps",
+    "Housing",
+    "Hps",
+    "Investment",
+    "Medisave and medishield life",
+    "Nomination",
+    "Self-employed"
+  ];
 
   return (
     <div className="text-base pb-10">
@@ -128,13 +93,13 @@ export default function Home() {
 
         {/* Schemes */}
         <div className="index-schemes-container">
-          {schemes.length > 0 ? (
-            schemes.map((i) => (
+          {predefinedSchemes.length > 0 ? (
+            predefinedSchemes.map((scheme, index) => (
               <SchemeCard
-                key={i.scheme_name}
-                scheme_name={i.scheme_name}
-                scheme_img={i.scheme_admin_img_path}
-                questions={i.questions.length}
+                key={index}
+                scheme_name={scheme}
+                scheme_img={null}  // No image before login
+                questions={0}       // Placeholder for question count
                 scheme_button={false}
                 className="flex flex-col items-center"
               />

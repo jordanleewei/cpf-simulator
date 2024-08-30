@@ -1,7 +1,7 @@
+# admin-dashboard/Dockerfile
 # Use the official Node.js 20.12.0 image
 FROM node:20.12.0
 
-# Set the working directory inside the container
 WORKDIR /admin-dashboard
 
 # Copy the package.json and package-lock.json files to the working directory
@@ -14,7 +14,6 @@ RUN npm install
 COPY . .
 
 # Set environment variables during the build process
-# These will be baked into the image and available at runtime
 ENV NEXT_PUBLIC_BACKEND_API_URL=https://backendapi.ccutrainingsimulator.com
 
 # Build the Next.js application

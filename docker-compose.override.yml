@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  admin-dashboard:
+    environment:
+      NEXT_PUBLIC_BACKEND_API_URL: http://localhost:8000
+    volumes:
+      - ./admin-dashboard:/admin-dashboard  # Mount the project directory for live reloading
+      - /admin-dashboard/node_modules  # Prevent overwriting node_modules
+    command: npm run dev  # Use the dev command to enable live reloading
+    ports:
+      - "3001:3001"
+
+  final-csa-dashboard:
+    environment:
+      NEXT_PUBLIC_BACKEND_API_URL: http://localhost:8000
+    volumes:
+      - ./final-csa-dashboard:/final-csa-dashboard  # Mount the project directory for live reloading
+      - /final-csa-dashboard/node_modules  # Prevent overwriting node_modules
+    command: npm run dev  # Use the dev command to enable live reloading
+    ports:
+      - "3000:3000"

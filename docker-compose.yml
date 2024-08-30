@@ -1,74 +1,42 @@
-version: "3"
-
 services:
-  dashboard-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    # image: dashboard-backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - mysql
-    volumes:
-      - ./:/code:ro
-    container_name: dashboard-backend
-    networks:
-      - my-network
-  
-  final-csa-dashboard:
-    # image: final-csa-dashboard
-    build:
-      context: ./final-csa-dashboard
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mysql
-      - dashboard-backend
-    volumes:
-      - ./:/code:ro
-    container_name: final-csa-dashboard
-    networks:
-      - my-network
-
   admin-dashboard:
-    # image: admin-dashboard
     build:
       context: ./admin-dashboard
       dockerfile: Dockerfile
+    image: cpf_simulator_frontend
     ports:
       - "3001:3001"
-    depends_on:
-      - mysql
-      - dashboard-backend
-
-    container_name: admin-dashboard
-    networks:
-      - my-network
-    
-  mysql:
-    image: mysql:latest
-    ports:
-      - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: test1234!
-      MYSQL_DATABASE: testing
-      MYSQL_USER: myuser
-      MYSQL_PASSWORD: mypassword
-    container_name: mysql
+      NEXT_PUBLIC_BACKEND_API_URL: https://backendapi.ccutrainingsimulator.com
     volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - my-network
+      - ./admin-dashboard:/admin-dashboard
+      - /admin-dashboard/.next
+    restart: unless-stopped
 
-    # deploy:
-    #   resources:
-    #     limits:
-    #       memory: 512M
-volumes:
-  mysql-data:
+  final-csa-dashboard:
+    build:
+      context: ./final-csa-dashboard
+      dockerfile: Dockerfile
+    image: cpf_simulator_trainee_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_API_URL: https://backendapi.ccutrainingsimulator.com
+    volumes:
+      - ./final-csa-dashboard:/final-csa-dashboard
+      - /final-csa-dashboard/.next
+    restart: unless-stopped
 
-networks:
-  my-network:
-    driver: bridge
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: cpf_simulator_backend_connected_to_aws_rdb
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/backend
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped

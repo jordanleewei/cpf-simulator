@@ -15,6 +15,7 @@ export default function isAuth(Component) {
 
         if (!token) {
           router.push("/");
+          alert('Your session has expired. Please log in again.');
         } else {
           setIsAuthenticated(true);
         }

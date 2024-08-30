@@ -5,54 +5,43 @@ AWS_ACCOUNT_ID="471112806622"
 REGION="ap-southeast-1"
 ECR_URL="$AWS_ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"
 
-# Array of project directories and corresponding image names
-projects=(
+# Array of services and corresponding image names
+services=(
     "backend:cpf_simulator_backend_connected_to_aws_rdb"
     "final-csa-dashboard:cpf_simulator_trainee_frontend"
     "admin-dashboard:cpf_simulator_frontend"
 )
 
-# Function to build, tag, and push Docker images
+# Function to build, tag, and push Docker images using docker-compose
 build_and_push() {
-    local project_dir=$1
+    local service_name=$1
     local image_name=$2
     
-    echo "Building Docker image for $project_dir..."
+    echo "Building Docker image for $service_name..."
 
-    # Check if the project directory exists
-    if [ -d "$project_dir" ]; then
-        # Navigate to the project directory
-        cd "$project_dir" || exit
+    # Build the Docker image using docker-compose
+    docker-compose build $service_name
 
-        # Build the Docker image
-        docker build -t $image_name .
+    # Tag the Docker image
+    docker tag $image_name:latest $ECR_URL/$image_name:latest
 
-        # Tag the Docker image
-        docker tag $image_name:latest $ECR_URL/$image_name:latest
+    # Push the Docker image to AWS ECR
+    docker push $ECR_URL/$image_name:latest
 
-        # Push the Docker image to AWS ECR
-        docker push $ECR_URL/$image_name:latest
-
-        echo "Docker image for $project_dir pushed successfully."
-
-        # Return to the original directory
-        cd - > /dev/null
-    else
-        echo "Directory $project_dir does not exist. Skipping..."
-    fi
+    echo "Docker image for $service_name pushed successfully."
 }
 
-# Iterate over all projects and run the build_and_push function in parallel
-for project in "${projects[@]}"; do
-    # Split the string into directory and image name
-    project_dir=$(echo $project | cut -d':' -f1)
-    image_name=$(echo $project | cut -d':' -f2)
-    
-    # Run the build_and_push function in the background
-    build_and_push $project_dir $image_name &
-done
+# Navigate to the directory containing the docker-compose.yml file
+cd "$(dirname "$0")" || exit
 
-# Wait for all background jobs to complete
-wait
+# Iterate over all services and run the build_and_push function
+for service in "${services[@]}"; do
+    # Split the string into service name and image name
+    service_name=$(echo $service | cut -d':' -f1)
+    image_name=$(echo $service | cut -d':' -f2)
+    
+    # Run the build_and_push function
+    build_and_push $service_name $image_name
+done
 
 echo "All Docker images have been built and pushed successfully."

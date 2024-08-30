@@ -21,30 +21,43 @@ function ReviewPage({ user }) {
     system_name: [],
     system_url: []
   });
+  const [loading, setLoading] = useState(false); // Define the loading state
   const loginDetails = user;
 
   useEffect(() => {
-    async function getAttempt() {
-      if (router.isReady) {
-        const attempt_id = router.query.slug;
+    async function pollAttempt(attempt_id, retryCount = 0) {
+      try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/attempt/${attempt_id}`);
-
-        const attemptData = await res.json();
-        console.log("attempt", attemptData);
-
-        // Safely handle system_name and system_url
-        attemptData.system_name = attemptData.system_name
-          ? attemptData.system_name.split(',').map(item => item.trim())
-          : []; // default to an empty array if system_name is undefined or null
-
-        attemptData.system_url = attemptData.system_url
-          ? attemptData.system_url.split(',').map(item => item.trim())
-          : []; // default to an empty array if system_url is undefined or null
-
-        setAttempt(attemptData);
+        if (res.ok) {
+          const attemptData = await res.json();
+  
+          attemptData.system_name = attemptData.system_name
+            ? attemptData.system_name.split(',').map(item => item.trim())
+            : [];
+  
+          attemptData.system_url = attemptData.system_url
+            ? attemptData.system_url.split(',').map(item => item.trim())
+            : [];
+  
+          setAttempt(attemptData);
+          setLoading(false); // Set loading to false when data is fetched
+        } else if (res.status === 404 && retryCount < 5) {
+          // Retry fetching attempt after delay
+          setTimeout(() => pollAttempt(attempt_id, retryCount + 1), 1000);
+        } else {
+          console.error("Error fetching attempt:", res.statusText);
+          setLoading(false); // Set loading to false if there's an error
+        }
+      } catch (error) {
+        console.error("Error during polling:", error);
+        setLoading(false); // Set loading to false if there's an error
       }
     }
-    getAttempt();
+  
+    if (router.isReady && router.query.slug) {
+      setLoading(true); // Set loading to true before starting the fetch
+      pollAttempt(router.query.slug);
+    }
   }, [router.isReady]);
 
   const feedbackData = [

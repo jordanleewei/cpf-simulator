@@ -77,7 +77,7 @@ function Question({ user }) {
 
     if (res.ok) {
       const data = await res.json();
-      handleReviewNav(data);
+      handleReviewNav(data.attempt_id); // Ensure the correct attempt ID is passed
     }
     setLoading(false);
   };

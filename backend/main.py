@@ -953,26 +953,31 @@ async def create_attempt(
             AttemptModel.attempt_id != db_attempt.attempt_id  # Exclude the current attempt
         ).order_by(AttemptModel.date.desc()).all()
 
-        # Check if there are enough previous attempts to update AI improvements
-        if len(previous_attempts) < 1:
-            # Create a new AI improvement record if there is only one attempt
-            logging.info(f"Not enough attempts to update AI improvement, creating new record for question ID {inputs['question_id']}")
+        # Check the number of previous attempts
+        if len(previous_attempts) == 0:
+            logging.info(f"First attempt for question ID {inputs['question_id']}. No AI improvement will be created or updated.")
+            return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": None}
+
+        elif len(previous_attempts) == 1:
+            logging.info(f"Triggering AI improvement creation for question ID {inputs['question_id']}")
             ai_improvement = await create_ai_improvement(
                 question_id=inputs['question_id'], 
                 last_attempt=db_attempt, 
-                db=db
+                db=db,
+                current_user=current_user
             )
+            return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": ai_improvement.ai_improvements_id}
+
         else:
-            # Update the AI improvement record
-            logging.info(f"Updating AI improvement for question ID {inputs['question_id']}")
+            logging.info(f"Triggering AI improvement update for question ID {inputs['question_id']}")
             ai_improvement = await update_ai_improvement(
                 question_id=inputs['question_id'], 
                 last_attempt=db_attempt, 
-                db=db
+                db=db,
+                current_user=current_user
             )
+            return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": ai_improvement.ai_improvements_id}
 
-        return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": ai_improvement.ai_improvements_id}
-    
     except Exception as e:
         logging.error(f"Failed to create attempt: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create attempt: {str(e)}")
@@ -1079,30 +1084,25 @@ async def create_ai_improvement(
     logging.info(f"Starting create_ai_improvement function for question_id: {question_id}")
     
     try:
-        # Fetch the question associated with the question_id
         db_question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
 
         if not db_question:
             raise HTTPException(status_code=404, detail="Question does not exist")
         
-        # Fetch all previous attempts related to the question, excluding the current one
-        attempts = db.query(AttemptModel).filter(
+        previous_attempts = db.query(AttemptModel).filter(
             AttemptModel.question_id == question_id,
-            AttemptModel.attempt_id != last_attempt.attempt_id  # Exclude the current attempt
+            AttemptModel.attempt_id != last_attempt.attempt_id
         ).order_by(AttemptModel.date.desc()).all()
 
-        if len(attempts) < 1:
+        if len(previous_attempts) < 1:
             raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
 
-        # Fetch the second last attempt for comparison
-        second_last_attempt = attempts[0]
+        second_last_attempt = previous_attempts[0]
 
-        # Calculate improvements based on accuracy, precision, and tone
         accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
         precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
         tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
 
-        # Generate user improvement feedback based on improvements
         improvement_data = {
             "question": db_question.question_details,
             "ideal": db_question.ideal,
@@ -1112,12 +1112,11 @@ async def create_ai_improvement(
             "previous_attempt": second_last_attempt.to_dict()
         }
 
-        # Call the external AI analysis function to generate feedback
         improvement_feedback = analyse_improvements(improvement_data)
 
         new_ai_improvement = AIImprovementsModel(
             question_id=question_id,
-            user_id=last_attempt.user_id,
+            user_id=current_user.uuid,
             accuracy_improvement=accuracy_improvement,
             precision_improvement=precision_improvement,
             tone_improvement=tone_improvement,
@@ -1164,15 +1163,12 @@ async def update_ai_improvement(
         if len(attempts) < 1:
             raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
 
-        # Fetch the second last attempt for comparison
         second_last_attempt = attempts[0]
 
-        # Calculate improvements based on accuracy, precision, and tone
         accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
         precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
         tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
 
-        # Generate user improvement feedback based on improvements
         improvement_data = {
             "question": db_question.question_details,
             "ideal": db_question.ideal,
@@ -1182,15 +1178,22 @@ async def update_ai_improvement(
             "previous_attempt": second_last_attempt.to_dict()
         }
 
-        # Call the external AI analysis function to generate feedback
         improvement_feedback = analyse_improvements(improvement_data)
 
         # Check if an AI improvement record already exists for the question
         ai_improvement_record = db.query(AIImprovementsModel).filter(AIImprovementsModel.question_id == question_id).first()
 
         if not ai_improvement_record:
-            raise HTTPException(status_code=404, detail="AI improvement record not found for the specified question.")
-        
+            logging.warning(f"AI improvement record not found for question_id: {question_id}. Redirecting to creation.")
+            # If no record is found, redirect to creation
+            ai_improvement_record = await create_ai_improvement(
+                question_id=question_id,
+                last_attempt=last_attempt,
+                db=db,
+                current_user=current_user
+            )
+            return ai_improvement_record
+
         # Update the existing AI improvement record
         ai_improvement_record.accuracy_improvement = accuracy_improvement
         ai_improvement_record.precision_improvement = precision_improvement

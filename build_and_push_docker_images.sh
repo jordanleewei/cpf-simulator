@@ -5,6 +5,9 @@ AWS_ACCOUNT_ID="471112806622"
 REGION="ap-southeast-1"
 ECR_URL="$AWS_ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"
 
+# AWS ECR login
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URL
+
 # Array of services and corresponding image names
 services=(
     "backend:cpf_simulator_backend_connected_to_aws_rdb"

@@ -122,6 +122,8 @@ npm run dev
 ```
 
 # Docker Notes:
-Running in Development: Simply run docker-compose up to use the base configuration together with the overrides from the docker-compose.override.yml file.
+Running in Development: Simply run docker compose up to use the base configuration together with the overrides from the docker-compose.override.yml file.
 
-Running in Production: Use docker-compose -f docker-compose.yml up --build to ensure only the base docker-compose.yml is used without the development overrides.
+Running in Production: use the ./build_and_push_docker_images.sh
+
+

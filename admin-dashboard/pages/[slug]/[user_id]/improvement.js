@@ -134,12 +134,12 @@ function ImprovementPage({ user }) {
                             Download
                         </button>
                     </div>
-                    <div className="pl-4 pr-4 mb-4">
+                    {/* <div className="pl-4 pr-4 mb-4">
                         <h3 className="font-bold">Score Feedback:</h3>
                         <p>{improvement.feedback}</p>
-                    </div>
+                    </div> */}
                     <div className="pl-4 pr-4 mb-4">
-                        <h3 className="font-bold">Overall Feedback:</h3>
+                        {/* <h3 className="font-bold">Overall Feedback:</h3> */}
                         <ReactMarkdown>{improvement.improvement_feedback}</ReactMarkdown>
                     </div>
                     {/* Commenting out the Improvement Scores graph */}

@@ -11,7 +11,7 @@ def analyse_improvements(data):
     llm = ChatOpenAI(
         temperature=1,
         openai_api_key=os.getenv("OPENAI_KEY"),
-        model_name="gpt-4o-mini"
+        model_name="gpt-4o"
     )
     
     # Define the prompt template

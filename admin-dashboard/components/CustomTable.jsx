@@ -41,15 +41,24 @@ export default function TableCustomized({ rows, user_id }) {
     );
   }
 
+  function handleImprovementNav(improve_id) {
+    console.log("Navigating to Improvement:", `/${improve_id}/${user_id}/improvement`);
+    console.log("user_id passed to TableCustomized:", user_id);
+    router.push(
+      `/${improve_id}/${user_id}/improvement`
+    );
+  }
+
   return (
     <Root sx={{ maxWidth: "100%", width: "100%" }}>
       <table aria-label="custom pagination table">
         <thead>
           <tr>
-            <th className=" bg-dark-grey">Question</th>
-            <th className=" bg-dark-grey">Scheme</th>
-            <th className=" bg-dark-grey">Time Completed</th>
-            <th className=" bg-dark-grey">Transcript</th>
+            <th className="bg-dark-grey">Question</th>
+            <th className="bg-dark-grey">Scheme</th>
+            <th className="bg-dark-grey">Time Completed</th>
+            <th className="bg-dark-grey">Transcript</th>
+            <th className="bg-dark-grey">Feedback</th> {/* Feedback Column */}
           </tr>
         </thead>
         <tbody>
@@ -68,12 +77,19 @@ export default function TableCustomized({ rows, user_id }) {
               >
                 Click to view attempt
               </td>
+              <td
+                align="right"
+                className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
+                onClick={() => handleImprovementNav(row.question_id)}
+              >
+                Click to view feedback
+              </td> {/* Improvement Column */}
             </tr>
           ))}
 
           {emptyRows > 0 && (
             <tr style={{ height: 34 * emptyRows }}>
-              <td colSpan={3} aria-hidden />
+              <td colSpan={5} aria-hidden />
             </tr>
           )}
         </tbody>
@@ -81,7 +97,7 @@ export default function TableCustomized({ rows, user_id }) {
           <tr>
             <CustomTablePagination
               rowsPerPageOptions={[10]}
-              colSpan={3}
+              colSpan={5} // Updated colSpan to 5 to include the new column
               count={rows.length}
               rowsPerPage={rowsPerPage}
               page={page}

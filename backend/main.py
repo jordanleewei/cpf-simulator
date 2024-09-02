@@ -1155,7 +1155,8 @@ async def update_ai_improvement(
         ).order_by(AttemptModel.date.desc()).all()
 
         if len(attempts) < 1:
-            raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
+            logging.info(f"Not enough attempts to generate improvements for question_id: {question_id} and user_id: {current_user.uuid}. Skipping AI improvement creation.")
+            return None  # Skip the AI improvement creation
 
         second_last_attempt = attempts[0]
 

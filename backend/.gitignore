@@ -7,3 +7,4 @@ __pycache__/
 *$pyc.class
 
 scheme_imgs/*
+.DS_Store

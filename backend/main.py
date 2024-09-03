@@ -10,12 +10,14 @@ from models.attempt import AttemptModel
 from models.scheme import SchemeModel
 from models.question import QuestionModel
 from models.ai_improvements import AIImprovementsModel
+from models.manual_feedback import ManualFeedbackModel
 from models.association_tables import user_scheme_association
 from session import create_session, engine, open_session
 from schemas.attempt import AttemptCreate, AttemptResponse, AttemptBase
 from schemas.user import UserBase, UserInput, UserResponseSchema
 from schemas.scheme import SchemeBase, SchemeInput
 from schemas.question import QuestionBase
+from schemas.manual_feedback import ManualFeedbackBase
 from schemas.ai_improvements import AIImprovementsBase
 from schemas.table import TableBase
 from config import Base, config
@@ -936,6 +938,13 @@ async def create_attempt(
     db.commit()
     logging.info("Attempt created successfully")
 
+    await create_manual_feedback( 
+        user_id=current_user.uuid, 
+        question_id=inputs['question_id'], 
+        attempt_id=db_attempt.attempt_id,
+        db=db
+    )
+
     # Fetch all previous attempts related to the question, excluding the current one
     previous_attempts = db.query(AttemptModel).filter(
         AttemptModel.question_id == inputs['question_id'],
@@ -1061,6 +1070,80 @@ async def get_user_average_scores(
             })
 
     return scheme_average_scores
+
+## MANUAL FEEDBACK ROUTES
+@app.post("/manual-feedback", status_code=status.HTTP_201_CREATED)
+async def create_manual_feedback(
+    user_id: str, 
+    question_id: str, 
+    attempt_id: str,
+    db: Session = Depends(create_session)
+):
+    # Ensure the related user, question, and attempt exist
+    db_user = db.query(UserModel).filter(UserModel.uuid == user_id).first()
+    db_question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
+    db_attempt = db.query(AttemptModel).filter(AttemptModel.attempt_id == attempt_id).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not db_question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    if not db_attempt:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    # Create the manual feedback record
+    manual_feedback = ManualFeedbackModel(
+        user_id=user_id,
+        question_id=question_id,
+        attempt_id=attempt_id,
+        feedback="Insert feedback"
+    )
+    db.add(manual_feedback)
+    db.commit()
+    db.refresh(manual_feedback)
+
+    return manual_feedback
+
+@app.put("/manual-feedback/{manual_feedback_id}", status_code=status.HTTP_200_OK)
+async def update_manual_feedback(
+    manual_feedback_id: str,
+    feedback: ManualFeedbackBase,
+    db: Session = Depends(create_session)
+):
+    # Fetch the existing manual feedback record
+    manual_feedback = db.query(ManualFeedbackModel).filter(
+        ManualFeedbackModel.manual_feedback_id == manual_feedback_id
+    ).first()
+
+    if not manual_feedback:
+        raise HTTPException(status_code=404, detail="Manual feedback not found")
+
+    # Update the feedback attribute
+    manual_feedback.feedback = feedback.feedback
+
+    # Commit the changes to the database
+    db.commit()
+    db.refresh(manual_feedback)
+
+    return {"message": "Feedback updated successfully", "manual_feedback": manual_feedback.to_dict()}
+
+@app.get("/manual-feedback/attempt/{attempt_id}", status_code=status.HTTP_200_OK)
+async def get_feedback(
+    attempt_id: str,
+    db: Session = Depends(create_session)
+):
+    # Fetch the manual feedback record using the attempt_id
+    manual_feedback = db.query(ManualFeedbackModel).filter(
+        ManualFeedbackModel.attempt_id == attempt_id
+    ).first()
+
+    if not manual_feedback:
+        raise HTTPException(status_code=404, detail="Feedback not found for the given attempt ID")
+
+    return {
+        "manual_feedback_id": manual_feedback.manual_feedback_id,
+        "feedback": manual_feedback.feedback
+    }
 
 ## AI IMPROVEMENT ROUTES ##
 @app.post("/ai-improvement/create/{question_id}", status_code=status.HTTP_201_CREATED)

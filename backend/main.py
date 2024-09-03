@@ -1308,10 +1308,13 @@ async def get_ai_improvement(
         AIImprovementsModel.question_id == question_id,
         AIImprovementsModel.user_id == user_id
     ).first()
+    
     if not ai_improvement_record:
         logging.warning(f"No record found for question_id: {question_id} and user_id: {user_id}")
-    else:
-        logging.info(f"Record found: {ai_improvement_record}")
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "First attempt made. Improvement feedback will be available after subsequent attempts."}
+        )
 
     # Retrieve related attempt data
     last_attempt = db.query(AttemptModel).filter(AttemptModel.attempt_id == ai_improvement_record.last_attempt_id).first()

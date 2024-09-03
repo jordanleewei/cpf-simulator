@@ -49,6 +49,19 @@ export default function TableCustomized({ rows, user_id }) {
     );
   }
 
+  function handleManualFeedbackNav(feedback_id) {
+    console.log("Navigating to Manual Feedback:", `/${feedback_id}/${user_id}/feedback`);
+    router.push(
+      {
+        pathname: `/${feedback_id}/${user_id}/feedback`,
+      },
+      { pathname: `/${feedback_id}/${user_id}/feedback` },
+      {
+        shallow: true,
+      }
+    );
+  }
+
   return (
     <Root sx={{ maxWidth: "100%", width: "100%" }}>
       <table aria-label="custom pagination table">
@@ -58,7 +71,8 @@ export default function TableCustomized({ rows, user_id }) {
             <th className="bg-dark-grey">Scheme</th>
             <th className="bg-dark-grey">Time Completed</th>
             <th className="bg-dark-grey">Transcript</th>
-            <th className="bg-dark-grey">Feedback</th> {/* Feedback Column */}
+            <th className="bg-dark-grey">Supervisor Feedback</th> {/* Manual Feedback Column */}
+            <th className="bg-dark-grey">Improvement Feedback</th> {/* Feedback Column */}
           </tr>
         </thead>
         <tbody>
@@ -80,9 +94,16 @@ export default function TableCustomized({ rows, user_id }) {
               <td
                 align="right"
                 className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
+                onClick={() => handleManualFeedbackNav(row.attempt_id)}
+              >
+                Click to view supervisor feedback
+              </td>
+              <td
+                align="right"
+                className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
                 onClick={() => handleImprovementNav(row.question_id)}
               >
-                Click to view feedback
+                Click to view improvement feedback
               </td> {/* Improvement Column */}
             </tr>
           ))}

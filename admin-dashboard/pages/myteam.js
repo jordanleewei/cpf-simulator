@@ -26,6 +26,7 @@ function MyTeam() {
   const router = useRouter();
   const accessRights = ["Trainee", "Admin"];
 
+  // Load team members without scheme mastery first
   useEffect(() => {
     const fetchData = async () => {
       const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
@@ -44,10 +45,25 @@ function MyTeam() {
         });
 
         if (res.ok) {
-          const teamMembers = await res.json();
+          let teamMembers = await res.json();
+
+          // Sort team members immediately after fetching
+          teamMembers = teamMembers.sort((a, b) => {
+            if (a.access_rights === "Admin" && b.access_rights !== "Admin") {
+              return -1;
+            } else if (a.access_rights !== "Admin" && b.access_rights === "Admin") {
+              return 1;
+            } else {
+              return a.name.localeCompare(b.name);
+            }
+          });
+
           setAllTeamMembers(teamMembers);
           setOriginalTeamMembers(teamMembers);
           setDisplayMembers(teamMembers);
+
+          // Lazy load scheme mastery data after the team members are displayed
+          teamMembers.forEach(member => loadSchemeMasteryForMember(member, token));
         } else {
           console.log("Authorization failed:", res.status);
           router.push('/');
@@ -80,6 +96,31 @@ function MyTeam() {
     fetchData();
   }, [router]);
 
+  // Function to load scheme mastery for each member lazily
+  const loadSchemeMasteryForMember = async (member, token) => {
+    const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+    try {
+      const res = await fetch(`${API_URL}/user/${member.uuid}/schemes`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const schemeMasteryRes = await res.json();
+        setAllTeamMembers((prev) => 
+          prev.map((tm) => tm.uuid === member.uuid 
+            ? { ...tm, schemeMastery: schemeMasteryRes } 
+            : tm)
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching scheme mastery:", error);
+    }
+  };
+
   useEffect(() => {
     let filteredMembers = allTeamMembers;
 
@@ -96,17 +137,6 @@ function MyTeam() {
           member.email.toLowerCase().includes(search.toLowerCase())
       );
     }
-
-    // Sort Admins alphabetically, then Trainees alphabetically
-    filteredMembers.sort((a, b) => {
-      if (a.access_rights === "Admin" && b.access_rights !== "Admin") {
-        return -1;
-      } else if (a.access_rights !== "Admin" && b.access_rights === "Admin") {
-        return 1;
-      } else {
-        return a.name.localeCompare(b.name);
-      }
-    });
 
     setDisplayMembers(filteredMembers);
   }, [schemeFilter, search, allTeamMembers]);
@@ -319,6 +349,7 @@ function MyTeam() {
               <th className="text-start py-2 px-3 border">Password</th>
               <th className="text-start py-2 px-3 border w-1/6">Access</th>
               <th className="text-start py-2 px-3 border w-1/3">Schemes</th>
+              <th className="text-start py-2 px-3 border w-1/3">Scheme Mastery</th>
               <th className="w-[0px] p-0" />
             </tr>
           </thead>
@@ -437,6 +468,20 @@ function MyTeam() {
                       handleSchemeChange(idx, updatedSchemes)
                     }
                   />
+                </td>
+                <td className="text-start py-2 px-3 border"> {/* Scheme Mastery Column */}
+                  <div className="rounded-lg p-5 flex flex-col justify-center items-center gap-5">
+                    {Array.isArray(i.schemeMastery) && i.schemeMastery.length > 0 ? (
+                      i.schemeMastery.map((cat, idx) => (
+                        <div key={idx}>
+                          <span><strong>Scheme:</strong> {cat.scheme_name}</span>
+                          <span> - {cat.num_attempted_questions}/{cat.num_questions} questions attempted</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="pt-2">No schemes assigned</div>
+                    )}
+                  </div>
                 </td>
                 <td>
                   {editState && (

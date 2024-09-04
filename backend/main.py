@@ -1548,6 +1548,82 @@ async def retroactively_update_ai_improvements(
 
     else:
         raise HTTPException(status_code=400, detail="Not enough attempts to generate improvements.")
+    
+@app.post("/ai-improvement/scan-create")
+async def scan_create_ai_improvements(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    logging.info("Starting scan to retroactively create AI improvements")
+
+    # Fetch all questions and users
+    all_users = db.query(UserModel).all()
+    all_questions = db.query(QuestionModel).all()
+
+    improvements_created = 0
+
+    for user in all_users:
+        for question in all_questions:
+            # Fetch all attempts by the user for the current question
+            attempts = db.query(AttemptModel).filter(
+                AttemptModel.user_id == user.uuid,
+                AttemptModel.question_id == question.question_id
+            ).order_by(AttemptModel.date.desc()).all()
+
+            # Only proceed if there are at least two attempts
+            if len(attempts) < 2:
+                logging.info(f"Skipping question {question.question_id} for user {user.uuid}, not enough attempts.")
+                continue
+
+            last_attempt = attempts[0]
+            second_last_attempt = attempts[1]
+
+            # Check if an AI improvement already exists
+            existing_improvement = db.query(AIImprovementsModel).filter(
+                AIImprovementsModel.question_id == question.question_id,
+                AIImprovementsModel.user_id == user.uuid
+            ).first()
+
+            if existing_improvement:
+                logging.info(f"Skipping question {question.question_id} for user {user.uuid}, improvement already exists.")
+                continue
+
+            # Calculate improvements based on accuracy, precision, and tone
+            accuracy_improvement = last_attempt.accuracy_score - second_last_attempt.accuracy_score
+            precision_improvement = last_attempt.precision_score - second_last_attempt.precision_score
+            tone_improvement = last_attempt.tone_score - second_last_attempt.tone_score
+
+            improvement_data = {
+                "question": question.question_details,
+                "ideal": question.ideal,
+                "ideal_system_name": question.ideal_system_name,
+                "ideal_system_url": question.ideal_system_url,
+                "last_attempt": last_attempt.to_dict(),
+                "previous_attempt": second_last_attempt.to_dict()
+            }
+
+            # Call the external AI analysis function to generate feedback
+            improvement_feedback = analyse_improvements(improvement_data)
+
+            # Create AI improvement record
+            ai_improvement = AIImprovementsModel(
+                question_id=question.question_id,
+                user_id=user.uuid,
+                last_attempt_id=last_attempt.attempt_id,
+                previous_attempt_id=second_last_attempt.attempt_id,
+                accuracy_improvement=accuracy_improvement,
+                precision_improvement=precision_improvement,
+                tone_improvement=tone_improvement,
+                updated=datetime.now(),
+                improvement_feedback=improvement_feedback
+            )
+
+            db.add(ai_improvement)
+            db.commit()
+            improvements_created += 1
+            logging.info(f"AI Improvement created for question_id: {question.question_id}, user_id: {user.uuid}")
+
+    return {"message": f"{improvements_created} AI improvements created."}
 
 ## S3 BUCKET ROUTES ##
 def get_s3_image_urls(bucket_name, prefix):

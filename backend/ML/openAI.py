@@ -50,10 +50,10 @@ def process_response(res):
             json_object = json.loads(res)
             format_dict = {
                 'accuracy_score': json_object.get('Accuracy'),
-                'precision_score': json_object.get('Precision'),
+                'precision_score': json_object.get('Comprehension'),
                 'tone_score': json_object.get('Tone'),
                 'accuracy_feedback': json_object.get('Accuracy Feedback'),
-                'precision_feedback': json_object.get('Precision Feedback'),
+                'precision_feedback': json_object.get('Comprehension Feedback'),
                 'tone_feedback': json_object.get('Tone Feedback'),
                 'feedback': json_object.get('Feedback')
             }
@@ -61,10 +61,10 @@ def process_response(res):
             json_object = json.loads('{' + res + '}')
             format_dict = {
                 'accuracy_score': json_object.get('Accuracy'),
-                'precision_score': json_object.get('Precision'),
+                'precision_score': json_object.get('Comprehension'),
                 'tone_score': json_object.get('Tone'),
                 'accuracy_feedback': json_object.get('Accuracy Feedback'),
-                'precision_feedback': json_object.get('Precision Feedback'),
+                'precision_feedback': json_object.get('Comprehension Feedback'),
                 'tone_feedback': json_object.get('Tone Feedback'),
                 'feedback': json_object.get('Feedback')
             }
@@ -140,12 +140,14 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
         """
         I will give you a question, a customer service trainee's response to that question, and the ideal response to that question. 
         Please assess the trainee's response to the question. Do not actually answer the question, but evaluate the answer only using the context given and the ideal answer.
-        Please give the trainee's response a score out of 5 for accuracy, precision, and tone. Accuracy refers to if the factually correct answers were provided, precision refers to whether the answer has enough details and is concise, and tone refers to whether the tone of the answer is respectful and professional. 
-        Please take note that the ideal response scored 5 for accuracy, precision, and tone and use it as a point of reference.
+        Please give the trainee's response a score out of 5 for accuracy, comprehension, and tone. Accuracy refers to if the factually correct answers were provided, comprehension refers to whether the answer has enough details, is concise and demonstrates that the question was fully understood, and tone refers to whether the tone of the answer is respectful and professional.   
+        Please take note that the ideal response scored 5 for accuracy, comprehension, and tone and use it as a point of reference.
         Please also give some general feedback for improvement.
         Please incorporate the following text in your Accuracy Feedback: {feedback}
 
-        It is acceptable to give the trainee full marks if they answered similarly to the ideal response, and if you do not have improvements to give, please give a score of 5. Do not mention the existence of the ideal response when providing your feedback.
+        If the trainee's response contains exact dates and monetary figures that are not in the question and do not match the ideal response, please ignore it when grading accuracy. For exact dates and monetary figures that are in the question, the trainee’s response should contain such information, even if they are not in the ideal response.
+
+        It is acceptable to give the trainee full marks if they answered similarly to the ideal response after ignoring what should be ignored based on the earlier instructions for exact dates and figures. If you do not have improvements to give, please also give a score of 5. Do not mention the existence of the ideal response when providing your feedback.    
 
         Use the following rubric as a guide when evaluating the response:
 
@@ -171,7 +173,7 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
         - **5**: The tone is consistently polite, professional, and empathetic, creating a positive and supportive customer experience that exceeds expectations.
 
         Please give your response in this JSON format, where score is an integer and all feedbacks are a string: 
-        "Accuracy": score, "Precision": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Precision Feedback": precision_feedback, "Tone Feedback": tone_feedback, "Feedback": feedback_response
+        "Accuracy": score, "Comprehension": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Comprehension Feedback": precision_feedback, "Tone Feedback": tone_feedback, "Feedback": feedback_response
         Do not include backticks and do wrap the feedback in quotation marks.
 
         Question: {question}

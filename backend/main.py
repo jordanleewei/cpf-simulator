@@ -980,6 +980,52 @@ async def create_attempt(
             logging.warning("Skipping AI improvement update due to not enough attempts.")
             return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": None}
         return {"attempt_id": db_attempt.attempt_id, "ai_improvement_id": ai_improvement.ai_improvements_id}
+    
+@app.put("/attempt/update_all", status_code=status.HTTP_200_OK)
+async def update_all_attempts(
+    db: Session = Depends(create_session), 
+    current_user: UserModel = Depends(get_current_user)
+):
+    logging.info("Starting update_all_attempts function")
+
+    # Fetch all attempts
+    db_attempts = db.query(AttemptModel).all()
+    if not db_attempts:
+        raise HTTPException(status_code=404, detail="No attempts found")
+
+    # Iterate over each attempt and update with new AI response
+    for db_attempt in db_attempts:
+        try:
+            # Fetch the corresponding question details
+            db_question = db.query(QuestionModel).filter(QuestionModel.question_id == db_attempt.question_id).first()
+            if not db_question:
+                logging.warning(f"Question with ID {db_attempt.question_id} not found. Skipping attempt ID {db_attempt.attempt_id}.")
+                continue
+
+            # Get the new AI response
+            response = openAI_response(
+                question=db_question.question_details, 
+                response=db_attempt.answer,  # using the existing answer in the attempt
+                ideal=db_question.ideal,
+                ideal_system_name=db_question.ideal_system_name,
+                ideal_system_url=db_question.ideal_system_url,
+                system_name=db_attempt.system_name,
+                system_url=db_attempt.system_url
+            )
+
+            # Process the response and update the attempt
+            response_data = process_response(response)
+            for key, value in response_data.items():
+                setattr(db_attempt, key, value)
+
+            db.commit()
+            logging.info(f"Successfully updated attempt ID {db_attempt.attempt_id}")
+
+        except Exception as e:
+            logging.error(f"Error updating attempt ID {db_attempt.attempt_id}: {str(e)}")
+            db.rollback()  # Rollback the session if any exception occurs
+
+    return {"message": "All attempts have been updated with the new AI response"}
 
 @app.get("/attempt/average_scores/user/{user_id}", status_code=200)
 async def get_user_average_scores(
@@ -1103,6 +1149,41 @@ async def create_manual_feedback(
     db.refresh(manual_feedback)
 
     return manual_feedback
+
+@app.post("/manual-feedback/scan-create", status_code=status.HTTP_201_CREATED)
+async def scan_and_create_feedback(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Fetch all attempts
+    db_attempts = db.query(AttemptModel).all()
+
+    created_feedback = []
+    for db_attempt in db_attempts:
+        # Check if a manual feedback record already exists for this attempt
+        existing_feedback = db.query(ManualFeedbackModel).filter(
+            ManualFeedbackModel.attempt_id == db_attempt.attempt_id
+        ).first()
+
+        if not existing_feedback:
+            # If no feedback exists, create one
+            manual_feedback = ManualFeedbackModel(
+                user_id=db_attempt.user_id,
+                question_id=db_attempt.question_id,
+                attempt_id=db_attempt.attempt_id,
+                feedback="Insert feedback"  # You can generate or insert actual feedback here
+            )
+            db.add(manual_feedback)
+            created_feedback.append(manual_feedback)
+
+    # Commit all the new feedbacks to the database in one go
+    if created_feedback:
+        db.commit()
+
+    return {
+        "message": f"{len(created_feedback)} feedback records created.",
+        "created_feedback": created_feedback
+    }
 
 @app.put("/manual-feedback/{manual_feedback_id}", status_code=status.HTTP_200_OK)
 async def update_manual_feedback(

@@ -14,7 +14,10 @@ function ReviewPage() {
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
   const { review, submit, profile, scheme_name } = router.query;
-  const [attempt, setAttempt] = useState([]);
+  const [attempt, setAttempt] = useState({
+    system_name: [],
+    system_url: []
+  });
   const [userProfile, setUserProfile] = useState("");
 
   useEffect(() => {
@@ -24,6 +27,14 @@ function ReviewPage() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/attempt/${attempt_id}`);
 
         const attemptData = await res.json();
+        
+        attemptData.system_name = attemptData.system_name
+            ? attemptData.system_name.split(',').map(item => item.trim())
+            : [];
+  
+          attemptData.system_url = attemptData.system_url
+            ? attemptData.system_url.split(',').map(item => item.trim())
+            : [];
 
         setAttempt(attemptData);
       }
@@ -136,6 +147,22 @@ function ReviewPage() {
           <div className="pl-4 pr-4 mb-4">
             <h3 className="font-bold">Your Answer:</h3>
             <p style={{ whiteSpace: "pre-wrap" }}>{attempt.answer}</p>
+          </div>
+          <div className="pl-4 pr-4 mb-4">
+            <h3 className="font-bold">Your System Name Answer:</h3>
+            <ul>
+              {attempt.system_name.map((name, index) => (
+                <li key={index}>{name}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="pl-4 pr-4 mb-4">
+            <h3 className="font-bold">Your System URL Answer:</h3>
+            <ul>
+              {attempt.system_url.map((url, index) => (
+                <li key={index}>{url}</li>
+              ))}
+            </ul>
           </div>
           <h3 className="px-4 py-2 w-auto h-max-content flex justify-between items-center font-bold">
             Overall Scores

@@ -103,15 +103,14 @@ export default function AverageScores({ user }) {
 
             {/* dropdown options */}
             {open ? (
-              <div className="z-10 bg-dark-grey absolute top-6 rounded-b-lg w-full px-1 py-2 ">
+              <div className="z-10 bg-white absolute top-full left-0 mt-1 rounded-b-lg w-full px-1 py-2 max-h-60 overflow-y-auto shadow-lg">
                 <ul className="space-y-1">
                   {averageScores.map((scores) => (
                     <li
                       key={scores.scheme_name}
-                      className={`flex h-4 items-center w-full py-3 rounded-lg pl-2 hover:cursor-pointer hover:bg-light-gray ${pieSelect == scores.scheme_name
-                          ? "bg-light-gray"
-                          : "bg-dark-grey"
-                        }`}
+                      className={`flex items-center w-full py-3 pl-2 rounded-lg hover:cursor-pointer hover:bg-gray-100 ${
+                        pieSelect === scores.scheme_name ? "bg-gray-100" : "bg-white"
+                      }`}
                       onClick={() => handlePieChart(scores.scheme_name)}
                     >
                       {scores.scheme_name}

@@ -70,6 +70,7 @@ export default function TableCustomized({ rows, user_id }) {
             <th className="bg-dark-grey">Question</th>
             <th className="bg-dark-grey">Scheme</th>
             <th className="bg-dark-grey">Time Completed</th>
+            <th className="bg-dark-grey">Attempt No.</th> {/* New Column */}
             <th className="bg-dark-grey">Transcript</th>
             <th className="bg-dark-grey">Supervisor Feedback</th> {/* Manual Feedback Column */}
             <th className="bg-dark-grey">Improvement Feedback</th> {/* Feedback Column */}
@@ -82,8 +83,9 @@ export default function TableCustomized({ rows, user_id }) {
           ).map((row, idx) => (
             <tr key={idx}>
               <td>{row.question_title}</td>
-              <td>{row.scheme_name.scheme_name}</td>
+              <td>{row.scheme_name}</td>
               <td align="right">{row.date}</td>
+              <td align="right">{row.attemptCount}</td> {/* Display Attempt Count */}
               <td
                 align="right"
                 className="hover:underline hover:underline-offset-2 hover:cursor-pointer"

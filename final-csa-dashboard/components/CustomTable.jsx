@@ -54,6 +54,7 @@ export default function TableCustomized({ rows }) {
             <th className="bg-dark-grey">Question</th>
             <th className="bg-dark-grey">Scheme</th>
             <th className="bg-dark-grey">Time Completed</th>
+            <th className="bg-dark-grey">Attempt No.</th>
             <th className="bg-dark-grey">Transcript</th>
           </tr>
         </thead>
@@ -64,8 +65,9 @@ export default function TableCustomized({ rows }) {
           ).map((row, idx) => (
             <tr key={idx}>
               <td>{row.question_title}</td>
-              <td>{row.scheme_name.scheme_name}</td>
+              <td>{row.scheme_name}</td>
               <td align="right">{row.date}</td>
+              <td align="right">{row.attemptNumber}</td> 
               <td
                 align="right"
                 className="hover:underline hover:underline-offset-2 hover:cursor-pointer"

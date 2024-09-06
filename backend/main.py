@@ -877,25 +877,50 @@ async def read_attempt(
         attempt_dict['scheme_name'] = str(scheme_name[0])
     return attempt_dict
 
-@app.get("/attempt/user/{user_id}", status_code=status.HTTP_201_CREATED)
+@app.get("/attempt/user/{user_id}", status_code=status.HTTP_200_OK)
 async def get_user_attempts(
     user_id: str, 
     db: Session = Depends(create_session), 
     current_user: UserModel = Depends(get_current_user)
 ):
     db_attempts = db.query(AttemptModel).filter(AttemptModel.user_id == user_id).order_by(AttemptModel.date.asc()).all()
-    attempts_list = []
+    
     if not db_attempts:
         raise HTTPException(status_code=404, detail="Attempts not found")
 
+    # Dictionary to group attempts by question_id
+    attempts_by_question = {}
+
+    # Group attempts by question_id
     for db_attempt in db_attempts:
-        db_question = db.query(QuestionModel).filter(QuestionModel.question_id == db_attempt.question_id).first()
-        question_title = db_question.to_dict()['title']
-        scheme_name = db_question.to_dict()['scheme_name']
-        question_details = db_question.to_dict()['question_details']
-        attempt_dict = db_attempt.to_dict()
-        attempt_dict.update({'question_title': question_title, 'scheme_name': scheme_name, 'question_details': question_details})
-        attempts_list.append(attempt_dict)
+        question_id = db_attempt.question_id
+        if question_id not in attempts_by_question:
+            attempts_by_question[question_id] = []
+        attempts_by_question[question_id].append(db_attempt)
+
+    attempts_list = []
+
+    # Assign attempt count based on the order of date for each question
+    for question_id, attempt_list in attempts_by_question.items():
+        # Sort by date for each question
+        sorted_attempts = sorted(attempt_list, key=lambda x: x.date)
+
+        # Iterate through sorted attempts and assign an attempt count
+        for idx, db_attempt in enumerate(sorted_attempts):
+            db_question = db.query(QuestionModel).filter(QuestionModel.question_id == db_attempt.question_id).first()
+            question_title = db_question.title
+            scheme_name = db_question.scheme_name
+            question_details = db_question.question_details
+
+            # Convert attempt to dictionary and update it with additional fields
+            attempt_dict = db_attempt.to_dict()
+            attempt_dict.update({
+                'question_title': question_title,
+                'scheme_name': scheme_name,
+                'question_details': question_details,
+                'attemptCount': idx + 1  # Assign attempt count based on position
+            })
+            attempts_list.append(attempt_dict)
 
     return attempts_list
 

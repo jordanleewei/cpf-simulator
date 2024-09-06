@@ -177,7 +177,7 @@ function Question({ user }) {
                   </button>
 
                   {dropdownOpen[index] && (
-                    <div className="z-10 bg-dark-grey absolute top-10 rounded-b-lg w-full px-2 py-2 max-h-48 overflow-y-scroll">
+                    <div className="z-10 bg-dark-grey absolute top-10 rounded-b-lg w-full px-2 py-2 max-h-40 overflow-y-scroll">
                       <ul className="space-y-1">
                         {systemOptions.map((option, idx) => (
                           <li

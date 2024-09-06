@@ -28,7 +28,7 @@ export default function SchemeFilter({
         </div>
       </button>
       {open ? (
-        <div className="z-10 bg-light-gray absolute top-full rounded-b-lg p-4 overflow-y-visible">
+        <div className="z-10 bg-light-gray absolute top-full rounded-b-lg p-4 max-h-48 overflow-y-auto shadow-lg">
           <ul className="space-y-3">
             <li className="flex items-center w-full gap-2">
               <button

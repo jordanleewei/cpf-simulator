@@ -50,14 +50,32 @@ function Profile({ user }) {
           headers: getAuthHeaders(),
         });
         if (res.ok) {
-          const attemptRes = await res.json();
-          // Before setting attempts state
+          let attemptRes = await res.json();
           if (Array.isArray(attemptRes)) {
-            setAttempts(attemptRes.reverse());
+            // Group attempts by question and add attempt number
+            const attemptsWithAttemptNumber = attemptRes.reduce((acc, attempt) => {
+              const key = attempt.question_id; // You can use question_title or question_id
+              if (!acc[key]) {
+                acc[key] = [];
+              }
+              acc[key].push(attempt);
+              return acc;
+            }, {});
+
+            // Add attempt number and sort by date within each group
+            const sortedAttempts = [];
+            Object.keys(attemptsWithAttemptNumber).forEach((questionKey) => {
+              const sortedGroup = attemptsWithAttemptNumber[questionKey].sort((a, b) => new Date(a.date) - new Date(b.date));
+              sortedGroup.forEach((attempt, index) => {
+                attempt.attemptNumber = index + 1; // Add attempt number (1st, 2nd, etc.)
+                sortedAttempts.push(attempt);
+              });
+            });
+
+            setAttempts(sortedAttempts.reverse()); // Display the latest first
           } else {
             console.error("Invalid attempts data:", attemptRes);
           }
-
         } else {
           console.error("Failed to fetch attempts:", res.status);
         }
@@ -96,6 +114,7 @@ function Profile({ user }) {
       "Date",
       "Question Title",
       "Question",
+      "Attempt Number",
       "Answer",
       "System Name",
       "System URL",
@@ -114,6 +133,7 @@ function Profile({ user }) {
       attempt.date,
       `"${attempt.question_title}"`,
       `"${attempt.question_details}"`,
+      `"${attempt.attemptNumber}"`,
       `"${attempt.answer}"`,
       `"${attempt.system_name}"`,
       `"${attempt.system_url}"`,

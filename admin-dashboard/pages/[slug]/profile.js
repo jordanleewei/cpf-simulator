@@ -44,7 +44,32 @@ function Profile() {
         );
         const attemptRes = await res.json();
         if (res.ok) {
-          setAttempts(attemptRes.reverse());
+          // Group attempts by question title and sort by date
+          const groupedAttempts = attemptRes.reduce((acc, attempt) => {
+            const key = attempt.question_id; 
+            if (!acc[key]) {
+              acc[key] = [];
+            }
+            acc[key].push(attempt);
+            return acc;
+          }, {});
+  
+          // Assign attempt number by sorting by date
+          const attemptsWithCount = [];
+          Object.keys(groupedAttempts).forEach((questionTitle) => {
+            const sortedAttempts = groupedAttempts[questionTitle].sort(
+              (a, b) => new Date(a.date) - new Date(b.date) // Sort by date ascending
+            );
+            sortedAttempts.forEach((attempt, index) => {
+              attemptsWithCount.push({
+                ...attempt,
+                attemptCount: index + 1, // Attempt number based on position in sorted list
+              });
+            });
+          });
+  
+          // Set the attempts with attemptCount
+          setAttempts(attemptsWithCount.reverse()); // Reverse to maintain latest attempts at the top
         }
       } catch (e) {
         console.log(e);
@@ -80,6 +105,7 @@ function Profile() {
       "Question Title",
       "Question",
       "Answer",
+      "Attempt Number",
       "Accuracy Feedback",
       "Accuracy Score",
       "Precision Feedback",
@@ -94,6 +120,7 @@ function Profile() {
       userProfile.email,
       attempt.scheme_name,
       attempt.date,
+      attempt.attemptCount,
       `"${attempt.question_title}"`,
       `"${attempt.question_details}"`,
       `"${attempt.answer}"`,

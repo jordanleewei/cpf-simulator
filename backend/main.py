@@ -2,7 +2,7 @@ import warnings
 warnings.filterwarnings("ignore", message=".*error reading bcrypt version.*")
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*`clean_up_tokenization_spaces`.*")
 import logging
-from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request, Form, Response
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request, Form, Response, APIRouter
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from models.user import UserModel
@@ -590,6 +590,40 @@ async def get_all_schemes(
         scheme_dict.update({'number_of_questions': question_number})
         scheme_list.append(scheme_dict)
     return scheme_list
+
+# Define the APIRouter
+public_router = APIRouter(
+    prefix="/public",
+    tags=["Public Routes"]
+)
+
+# Public scheme route
+@public_router.get("/scheme", status_code=status.HTTP_200_OK)
+async def get_public_schemes(
+    db: Session = Depends(create_session)
+):
+    db_schemes = db.query(SchemeModel).all()  # Fetch all schemes
+    if not db_schemes:
+        return []
+    
+    scheme_list = []
+    for scheme in db_schemes:
+        # Fetch the number of questions for the current scheme
+        question_count = db.query(func.count(QuestionModel.question_id)).filter(QuestionModel.scheme_name == scheme.scheme_name).scalar()
+
+        # Add scheme and number of questions to the response
+        scheme_dict = {
+            'scheme_name': scheme.scheme_name,
+            'scheme_csa_img_path': scheme.scheme_csa_img_path,
+            'scheme_admin_img_path': scheme.scheme_admin_img_path,
+            'number_of_questions': question_count  # Include the number of questions
+        }
+        scheme_list.append(scheme_dict)
+    
+    return scheme_list
+
+# Include the public_router
+app.include_router(public_router)
 
 @app.delete('/scheme/{scheme_name}', status_code=status.HTTP_200_OK)
 async def delete_scheme(

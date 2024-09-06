@@ -12,17 +12,25 @@ import feedbackpage from "../public/feedbackpage.png";
 import SchemeCard from "../components/SchemeCard";
 
 export default function Home() {
-  const predefinedSchemes = [
-    "Account closure or withdrawal",
-    "Careshield life",
-    "Dps",
-    "Housing",
-    "Hps",
-    "Investment",
-    "Medisave and medishield life",
-    "Nomination",
-    "Self-employed"
-  ];
+  const [schemes, setSchemes] = useState([]);
+
+  useEffect(() => {
+    async function fetchSchemes() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/public/scheme`);
+        if (res.ok) {
+          const data = await res.json();
+          setSchemes(data);
+        } else {
+          console.error("Failed to fetch schemes");
+        }
+      } catch (error) {
+        console.error("Error fetching schemes:", error);
+      }
+    }
+  
+    fetchSchemes();
+  }, []);
 
   return (
     <div className="text-base pb-10">
@@ -93,13 +101,13 @@ export default function Home() {
 
         {/* Schemes */}
         <div className="index-schemes-container">
-          {predefinedSchemes.length > 0 ? (
-            predefinedSchemes.map((scheme, index) => (
+          {schemes.length > 0 ? (
+            schemes.map((scheme, index) => (
               <SchemeCard
                 key={index}
-                scheme_name={scheme}
-                scheme_img={null}  // No image before login
-                questions={0}       // Placeholder for question count
+                scheme_name={scheme.scheme_name}
+                scheme_img={scheme.scheme_csa_img_path || scheme.scheme_admin_img_path}  // Use the appropriate image path
+                questions={scheme.number_of_questions}  // Use the number of questions from the backend
                 scheme_button={false}
                 className="flex flex-col items-center"
               />

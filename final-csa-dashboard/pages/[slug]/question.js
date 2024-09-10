@@ -24,10 +24,11 @@ function Question({ user }) {
     "NICE 2.0",
     "AskCPF",
     "BEACON",
+    "CPF Website",
     "CSHL Biz Portal",
     "CSHL Website",
     "PBS Admin Module",
-    "CPF Website",
+    "Knowledge Management articles",
   ];
 
   useEffect(() => {

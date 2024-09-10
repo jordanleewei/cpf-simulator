@@ -21,7 +21,7 @@ function AddQuestions() {
   const [title, setTitle] = useState("");
   const [question_details, setDetails] = useState("");
   const [ideal, setIdeal] = useState("");
-  const difficulty = ["Easy", "Medium", "Hard"];
+  const difficulty = ["Easy", "Intermediate", "Complex"];
   const [selectedDifficulty, setSelectedDifficulty] = useState(0);
   const [scheme, setScheme] = useState("");
   const [idealSystems, setIdealSystems] = useState([{ name: "", url: "" }]);

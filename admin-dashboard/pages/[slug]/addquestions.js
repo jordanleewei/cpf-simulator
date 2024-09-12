@@ -1,36 +1,51 @@
+// framework
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import {
-  Input,
-  Dropdown,
-  DropdownMenu,
-  DropdownTrigger,
-  Button,
-  ButtonGroup,
-  DropdownItem,
-} from "@nextui-org/react";
+import Select from "react-select";
+import { Input, Button, ButtonGroup } from "@nextui-org/react";
 import { AiFillCaretDown } from "react-icons/ai";
 import { IoIosArrowBack, IoMdAdd, IoMdRemove } from "react-icons/io";
 import isAuth from '../../components/isAuth';
 
 function AddQuestions() {
-  // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const router = useRouter();
 
   const [title, setTitle] = useState("");
   const [question_details, setDetails] = useState("");
   const [ideal, setIdeal] = useState("");
-  const difficulty = ["Easy", "Intermediate", "Complex"];
-  const [selectedDifficulty, setSelectedDifficulty] = useState(0);
+  const difficultyOptions = [
+    { value: 0, label: "Easy" },
+    { value: 1, label: "Intermediate" },
+    { value: 2, label: "Complex" },
+  ];
+  const [selectedDifficulty, setSelectedDifficulty] = useState(difficultyOptions[0]);
   const [scheme, setScheme] = useState("");
   const [idealSystems, setIdealSystems] = useState([{ name: "", url: "" }]);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // Predefined system list for dropdown
+  const defaultSystemsList = [
+    { label: "NICE 2.0", value: "https://cpfNICE 2.0.my.salesforce.com/" },
+    { label: "BEACON", value: "https://beacon.cpf.gov.sg/" },
+    { label: "CPF Super Admin Modules", value: "https://web-eservices.cpfb.gov.sg/admin/cseadmin" },
+    { label: "CPF website", value: "https://www.cpf.gov.sg/" },
+    { label: "ARISE Employer Portal", value: "https://ariseempr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
+    { label: "ARISE Member Portal", value: "https://arisembr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
+    { label: "CAYE Admin Portal", value: "https://intraprod-caye.cpf.gov.sg/caye/admin/web/" },
+    { label: "ERT Admin (CPF EZPay Admin Portal)", value: "https://intraprod2.cpf.gov.sg/ertadmin/loginForm.jsp" },
+    { label: "iQMS (eAppointment system)", value: "https://iqmsadmin.cpf.gov.sg/signin" },
+    { label: "CareShield Life Biz Portal", value: "https://hc-cbp-prd.careshieldlife.gov.sg/cbp/web/CISFNC00001" },
+    { label: "CareShield Life Website", value: "https://www.careshieldlife.gov.sg/" },
+    { label: "E-Housing Portal", value: "https://hseintra.cpf.gov.sg/hseadmin/login.jsp" },
+    { label: "DBC – Workfare Application", value: "Accessible via Start menu > All apps > DBC Application 7.3.6 > Workfare Applications" },
+    { label: "NPHC", value: "https://intranet-nphc.moh.gov.sg/" },
+    { label: "Mainframe/Mainframe WFH container", value: "https://cpfwiardsav05p.cpf.net/rdweb"},
+    { label: "Finesse (IPCC)", value: "https://ipclafinav01p.ipcc.cpf.gov.sg/desktop/container/landing.jsp?locale=en_US"},
+  ];
 
   const defaultSystems = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/default-systems`);
+      const res = await fetch(`${API_URL}/default-systems`);
       if (!res.ok) {
         throw new Error("Failed to fetch default system names and urls");
       }
@@ -66,7 +81,7 @@ function AddQuestions() {
     idealSystemUrls
   ) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/question`, {
+      const response = await fetch(`${API_URL}/question`, {
         method: "POST",
         body: JSON.stringify({
           title: title,
@@ -101,7 +116,7 @@ function AddQuestions() {
       const idealSystemUrls = idealSystems.map(system => system.url).join(", ");
       await addquestions(
         title,
-        difficulty[selectedDifficulty],
+        selectedDifficulty.label,
         question_details,
         ideal,
         scheme,
@@ -122,22 +137,15 @@ function AddQuestions() {
     setTitle("");
     setDetails("");
     setIdeal("");
-    setSelectedDifficulty(0);
-    setIdealSystems([
-      { name: "", url: "" }
-    ]);
+    setSelectedDifficulty(difficultyOptions[0]);
+    setIdealSystems([{ name: "", url: "" }]);
     router.push(`/${scheme.toLowerCase()}/exercises`);
   }
 
-  function handleIdealSystemNameChange(index, value) {
+  function handleIdealSystemNameChange(index, selectedOption) {
     const newIdealSystems = [...idealSystems];
-    newIdealSystems[index].name = value;
-    setIdealSystems(newIdealSystems);
-  }
-
-  function handleIdealSystemUrlChange(index, value) {
-    const newIdealSystems = [...idealSystems];
-    newIdealSystems[index].url = value;
+    newIdealSystems[index].name = selectedOption.label;
+    newIdealSystems[index].url = selectedOption.value;
     setIdealSystems(newIdealSystems);
   }
 
@@ -190,38 +198,12 @@ function AddQuestions() {
             <span className="flex">
               <p className=" text-red-500">*</p>Difficulty:{" "}
             </span>
-            <div className="flex border border-sage-green p-1 w-48 justify-between ">
-              <span className="flex w-1/4">{difficulty[selectedDifficulty]}</span>
-              <Dropdown isOpen={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownTrigger placement="bottom-end">
-                  <Button isIconOnly className="px-2">
-                    <AiFillCaretDown />
-                  </Button>
-                </DropdownTrigger>
-
-                <DropdownMenu
-                  disallowEmptySelection
-                  aria-label={difficulty[selectedDifficulty]}
-                  selectedKey={[selectedDifficulty]}
-                  selectionMode="single"
-                  className="place-items-center block bg-light-green"
-                >
-                  {difficulty.map((difficulty, index) => (
-                    <DropdownItem
-                      className="p-1 hover:bg-white/50 outline-none rounded w-full"
-                      key={index}
-                      onAction={() => {
-                        setSelectedDifficulty(index);
-                        setDropdownOpen(false);
-                        console.log("Selected option:", difficulty);
-                      }}
-                    >
-                      {difficulty}
-                    </DropdownItem>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-            </div>
+            <Select
+              value={selectedDifficulty}
+              onChange={setSelectedDifficulty}
+              options={difficultyOptions}
+              className="w-48"
+            />
           </ButtonGroup>
 
           <div className="flex flex-row md:flex-nowrap gap-0.5 px-1 m-2 w-full justify-center">
@@ -258,25 +240,28 @@ function AddQuestions() {
               onChange={(e) => setIdeal(e.target.value)}
             ></textarea>
           </div>
+
+          {/* Updated Ideal System handling with react-select */}
           {idealSystems.map((idealSystem, index) => (
-            <div key={index} className="flex justify-center w-5/6">
+            <div key={index} className="flex justify-center w-full">
               <div className="w-full ml-3">
                 <p className="text-red-500 inline">*</p>Verified System Name:
-                <textarea
-                  required={true}
-                  id={`ideal-system-name-${index}`}
-                  rows="1"
-                  className="block p-2.5 text-sm text-gray-900 text-wrap h-[50px] w-full
-                  bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
-                  focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
-                  dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="Enter the verified system name"
-                  value={idealSystem.name}
-                  onChange={(e) => handleIdealSystemNameChange(index, e.target.value)}
+                <Select
+                  options={defaultSystemsList}
+                  onChange={(selectedOption) =>
+                    handleIdealSystemNameChange(index, selectedOption)
+                  }
+                  value={
+                    idealSystem.name
+                      ? { label: idealSystem.name, value: idealSystem.url }
+                      : null
+                  }
+                  placeholder="Select or enter system name"
+                  className="w-full"
                 />
               </div>
               <div className="w-full ml-3">
-                <p className="text-red-500 inline">*</p>Verified System URL:
+              <p className="text-red-500 inline">*</p>Verified System URL:
                 <textarea
                   required={true}
                   id={`ideal-system-url-${index}`}
@@ -287,7 +272,7 @@ function AddQuestions() {
                   dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="Enter the verified system URL"
                   value={idealSystem.url}
-                  onChange={(e) => handleIdealSystemUrlChange(index, e.target.value)}
+                  readOnly // Make the URL field read-only so it cannot be edited
                 />
               </div>
               <div className="relative flex items-center py-10 px-8">
@@ -306,7 +291,6 @@ function AddQuestions() {
               </div>
             </div>
           ))}
-
 
           <div className="flex justify-center items-end">
             <Button

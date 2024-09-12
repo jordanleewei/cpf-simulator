@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --upgrade -r /backend/requirements.txt
+    && pip install --no-cache-dir --timeout=120 --retries=10 --upgrade -r /backend/requirements.txt -i https://pypi.org/simple
 
 COPY . .
 

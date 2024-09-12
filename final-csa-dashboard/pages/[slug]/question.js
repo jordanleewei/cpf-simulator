@@ -21,14 +21,22 @@ function Question({ user }) {
 
   // Predefined system names
   const systemOptions = [
-    "NICE 2.0",
-    "AskCPF",
-    "BEACON",
-    "CPF Website",
-    "CSHL Biz Portal",
-    "CSHL Website",
-    "PBS Admin Module",
-    "Knowledge Management articles",
+    { name: "NICE 2.0", url: "https://cpfNICE 2.0.my.salesforce.com/" },
+    { name: "BEACON", url: "https://beacon.cpf.gov.sg/" },
+    { name: "CPF Super Admin Modules", url: "https://web-eservices.cpfb.gov.sg/admin/cseadmin" },
+    { name: "CPF website", url: "https://www.cpf.gov.sg/" },
+    { name: "ARISE Employer Portal", url: "https://ariseempr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
+    { name: "ARISE Member Portal", url: "https://arisembr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
+    { name: "CAYE Admin Portal", url: "https://intraprod-caye.cpf.gov.sg/caye/admin/web/" },
+    { name: "ERT Admin (CPF EZPay Admin Portal)", url: "https://intraprod2.cpf.gov.sg/ertadmin/loginForm.jsp" },
+    { name: "iQMS (eAppointment system)", url: "https://iqmsadmin.cpf.gov.sg/signin" },
+    { name: "CareShield Life Biz Portal", url: "https://hc-cbp-prd.careshieldlife.gov.sg/cbp/web/CISFNC00001" },
+    { name: "CareShield Life Website", url: "https://www.careshieldlife.gov.sg/" },
+    { name: "E-Housing Portal", url: "https://hseintra.cpf.gov.sg/hseadmin/login.jsp" },
+    { name: "DBC – Workfare Application", url: "Accessible via Start menu > All apps > DBC Application 7.3.6 > Workfare Applications" },
+    { name: "NPHC", url: "https://intranet-nphc.moh.gov.sg/" },
+    { name: "Mainframe/Mainframe WFH container", url: "https://cpfwiardsav05p.cpf.net/rdweb" },
+    { name: "Finesse (IPCC)", url: "https://ipclafinav01p.ipcc.cpf.gov.sg/desktop/container/landing.jsp?locale=en_US" }
   ];
 
   useEffect(() => {
@@ -96,15 +104,10 @@ function Question({ user }) {
     setLoading(false);
   };
 
-  function handleSystemNameChange(index, value) {
+  function handleSystemNameChange(index, selectedSystem) {
     const newSystems = [...systems];
-    newSystems[index].name = value;
-    setSystems(newSystems);
-  }
-
-  function handleSystemUrlChange(index, value) {
-    const newSystems = [...systems];
-    newSystems[index].url = value;
+    newSystems[index].name = selectedSystem.name;
+    newSystems[index].url = selectedSystem.url; // Automatically set the URL
     setSystems(newSystems);
   }
 
@@ -184,14 +187,14 @@ function Question({ user }) {
                           <li
                             key={idx}
                             className={`flex items-center py-2 pl-2 rounded-lg cursor-pointer hover:bg-light-gray ${
-                              system.name === option ? "bg-light-gray" : ""
+                              system.name === option.name ? "bg-light-gray" : ""
                             }`}
                             onClick={() => {
-                              handleSystemNameChange(index, option);
+                              handleSystemNameChange(index, option); // Pass the system object (name and URL)
                               toggleDropdown(index); // Close dropdown after selection
                             }}
                           >
-                            {option}
+                            {option.name}
                           </li>
                         ))}
                       </ul>
@@ -201,16 +204,16 @@ function Question({ user }) {
               </div>
 
               <div className="w-1/2 ml-3">
-                <div className="font-bold">System URL</div>
-                <textarea
-                  required={true}
-                  id={`system-url-${index}`}
-                  rows="1"
-                  className="w-full bg-transparent border-4 border-solid border-dark-green rounded-lg p-2"
-                  placeholder="Enter system URL"
-                  value={system.url}
-                  onChange={(e) => handleSystemUrlChange(index, e.target.value)}
-                />
+              <div className="font-bold">System URL</div>
+              <textarea
+                required={true}
+                id={`system-url-${index}`}
+                rows="1"
+                className="w-full bg-transparent border-4 border-solid border-dark-green rounded-lg p-2"
+                placeholder="Enter system URL"
+                value={system.url}
+                readOnly // Make the URL field read-only so users can't edit it
+              />
               </div>
 
               {index === systems.length - 1 && (

@@ -43,26 +43,26 @@ function AddQuestions() {
     { label: "Finesse (IPCC)", value: "https://ipclafinav01p.ipcc.cpf.gov.sg/desktop/container/landing.jsp?locale=en_US"},
   ];
 
-  const defaultSystems = async () => {
-    try {
-      const res = await fetch(`${API_URL}/default-systems`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch default system names and urls");
-      }
-      const data = await res.json();
-      setIdealSystems([
-        { name: data.SYSTEM_1_NAME, url: data.SYSTEM_1_URL },
-        { name: data.SYSTEM_2_NAME, url: data.SYSTEM_2_URL },
-        { name: data.SYSTEM_3_NAME, url: data.SYSTEM_3_URL },
-      ]);
-    } catch (error) {
-      console.error("Error fetching default system names and urls:", error);
-    }
-  };
+  // const defaultSystems = async () => {
+  //   try {
+  //     const res = await fetch(`${API_URL}/default-systems`);
+  //     if (!res.ok) {
+  //       throw new Error("Failed to fetch default system names and urls");
+  //     }
+  //     const data = await res.json();
+  //     setIdealSystems([
+  //       { name: data.SYSTEM_1_NAME, url: data.SYSTEM_1_URL },
+  //       { name: data.SYSTEM_2_NAME, url: data.SYSTEM_2_URL },
+  //       { name: data.SYSTEM_3_NAME, url: data.SYSTEM_3_URL },
+  //     ]);
+  //   } catch (error) {
+  //     console.error("Error fetching default system names and urls:", error);
+  //   }
+  // };
 
-  useEffect(() => {
-    defaultSystems();
-  }, []);
+  // useEffect(() => {
+  //   defaultSystems();
+  // }, []);
 
   useEffect(() => {
     if (router.isReady) {
@@ -256,7 +256,7 @@ function AddQuestions() {
                       ? { label: idealSystem.name, value: idealSystem.url }
                       : null
                   }
-                  placeholder="Select or enter system name"
+                  placeholder="Select system name"
                   className="w-full"
                 />
               </div>
@@ -270,7 +270,7 @@ function AddQuestions() {
                   bg-gray-50 rounded-lg border border-sage-green focus:ring-blue-500 
                   focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
                   dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="Enter the verified system URL"
+                  placeholder="Verified system URL"
                   value={idealSystem.url}
                   readOnly // Make the URL field read-only so it cannot be edited
                 />

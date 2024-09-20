@@ -6,6 +6,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
+from sqlalchemy.orm import Session
+from session import SessionFactory
+from models.prompt import PromptModel
 import json
 import os
 from dotenv import load_dotenv
@@ -135,53 +138,72 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
         feedback = f"The source(s) referenced by the trainee are incomplete. The missing source name(s) are {', '.join(missing_names)}."
     print(feedback)
 
-    # Prompt template and further processing
-    prompt_template = PromptTemplate.from_template(
-        """
-        I will give you a question, a customer service trainee's response to that question, and the ideal response to that question. 
-        Please assess the trainee's response to the question. Do not actually answer the question, but evaluate the answer only using the context given and the ideal answer.
-        Please give the trainee's response a score out of 5 for accuracy, comprehension, and tone. Accuracy refers to if the factually correct answers were provided, comprehension refers to whether the answer has enough details, is concise and demonstrates that the question was fully understood, and tone refers to whether the tone of the answer is respectful and professional.   
-        Please take note that the ideal response scored 5 for accuracy, comprehension, and tone and use it as a point of reference.
-        Please also give some general feedback for improvement.
-        Please incorporate the following text in your Accuracy Feedback: {feedback}
+   # Fetch the prompt from the database
+    db = SessionFactory()
+    try:
+        db_prompt = db.query(PromptModel).first()
+        if db_prompt and db_prompt.prompt_text.strip():
+            prompt_text = db_prompt.prompt_text
+        else:
+            prompt_text = None  # Use default prompt if none is set or prompt is empty
+    except Exception as e:
+        db.rollback()
+        print(f"Error fetching prompt from database: {e}")
+        prompt_text = None  # Fallback to default prompt
+    finally:
+        db.close()  # Ensure the session is closed
 
-        If the trainee's response contains exact dates and monetary figures that are not in the question and do not match the ideal response, please ignore it when grading accuracy. For exact dates and monetary figures that are in the question, the trainee’s response should contain such information, even if they are not in the ideal response.
+    # Use the dynamic prompt if available; else use the default prompt
+    if prompt_text:
+        prompt_template = PromptTemplate.from_template(prompt_text)
+    else:
+        # Use the hardcoded default prompt
+        prompt_template = PromptTemplate.from_template(
+            """
+            I will give you a question, a customer service trainee's response to that question, and the ideal response to that question.
+            Please assess the trainee's response to the question. Do not actually answer the question, but evaluate the answer only using the context given and the ideal answer.
+            Please give the trainee's response a score out of 5 for accuracy, comprehension, and tone. Accuracy refers to if the factually correct answers were provided, comprehension refers to whether the answer has enough details, is concise and demonstrates that the question was fully understood, and tone refers to whether the tone of the answer is respectful and professional.
+            Please take note that the ideal response scored 5 for accuracy, comprehension, and tone and use it as a point of reference.
+            Please also give some general feedback for improvement.
+            Please incorporate the following text in your Accuracy Feedback: {feedback}
 
-        It is acceptable to give the trainee full marks if they answered similarly to the ideal response after ignoring what should be ignored based on the earlier instructions for exact dates and figures. If you do not have improvements to give, please also give a score of 5. Do not mention the existence of the ideal response when providing your feedback.    
+            If the trainee's response contains exact dates and monetary figures that are not in the question and do not match the ideal response, please ignore it when grading accuracy. For exact dates and monetary figures that are in the question, the trainee’s response should contain such information, even if they are not in the ideal response.
 
-        Use the following rubric as a guide when evaluating the response:
+            It is acceptable to give the trainee full marks if they answered similarly to the ideal response after ignoring what should be ignored based on the earlier instructions for exact dates and figures. If you do not have improvements to give, please also give a score of 5. Do not mention the existence of the ideal response when providing your feedback.
 
-        **Accuracy**
-        - **1**: The response contains significant errors and inaccuracies, possibly leading to misinformation or confusion for the customer.
-        - **2**: The response has several inaccuracies and lacks attention to detail, which could impact the customer's understanding of the information provided.
-        - **3**: The response is mostly accurate but may contain minor errors that do not significantly impact the overall understanding.
-        - **4**: The response is accurate with very few, if any, errors, ensuring that the information provided is reliable and correct.
-        - **5**: The response is completely accurate and error-free, demonstrating a high level of attention to detail and precision in the information provided.
+            Use the following rubric as a guide when evaluating the response:
 
-        **Comprehension**
-        - **1**: The response demonstrates a lack of understanding of the customer's query, possibly leading to irrelevant or unhelpful information being provided.
-        - **2**: The response shows partial understanding of the customer's query, but may miss key points or fail to address the customer's needs comprehensively.
-        - **3**: The response demonstrates a good understanding of the customer's query, addressing the main points effectively and providing relevant information.
-        - **4**: The response shows a clear understanding of the customer's query, ensuring that all aspects of the customer's query are addressed accurately and comprehensively.
-        - **5**: The response demonstrates an exceptional understanding of the customer's query, even in ambiguous situations, providing insightful and comprehensive information that exceeds the customer's expectations.
+            **Accuracy**
+            - **1**: The response contains significant errors and inaccuracies, possibly leading to misinformation or confusion for the customer.
+            - **2**: The response has several inaccuracies and lacks attention to detail, which could impact the customer's understanding of the information provided.
+            - **3**: The response is mostly accurate but may contain minor errors that do not significantly impact the overall understanding.
+            - **4**: The response is accurate with very few, if any, errors, ensuring that the information provided is reliable and correct.
+            - **5**: The response is completely accurate and error-free, demonstrating a high level of attention to detail and precision in the information provided.
 
-        **Tone**
-        - **1**: The tone is inappropriate, unprofessional, or rude, potentially leading to a negative customer experience.
-        - **2**: The tone is somewhat inappropriate or lacks professionalism, which may impact the customer's perception of the service.
-        - **3**: The tone is polite and professional, but may have some inconsistencies or lack a personal touch, potentially affecting the overall customer experience.
-        - **4**: The tone is consistently polite, professional, and engaging, enhancing the customer's experience and demonstrating a high level of customer service.
-        - **5**: The tone is consistently polite, professional, and empathetic, creating a positive and supportive customer experience that exceeds expectations.
+            **Comprehension**
+            - **1**: The response demonstrates a lack of understanding of the customer's query, possibly leading to irrelevant or unhelpful information being provided.
+            - **2**: The response shows partial understanding of the customer's query, but may miss key points or fail to address the customer's needs comprehensively.
+            - **3**: The response demonstrates a good understanding of the customer's query, addressing the main points effectively and providing relevant information.
+            - **4**: The response shows a clear understanding of the customer's query, ensuring that all aspects of the customer's query are addressed accurately and comprehensively.
+            - **5**: The response demonstrates an exceptional understanding of the customer's query, even in ambiguous situations, providing insightful and comprehensive information that exceeds the customer's expectations.
 
-        Please give your response in this JSON format, where score is an integer and all feedbacks are a string: 
-        "Accuracy": score, "Comprehension": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Comprehension Feedback": precision_feedback, "Tone Feedback": tone_feedback, "Feedback": feedback_response
-        Do not include backticks and do wrap the feedback in quotation marks.
+            **Tone**
+            - **1**: The tone is inappropriate, unprofessional, or rude, potentially leading to a negative customer experience.
+            - **2**: The tone is somewhat inappropriate or lacks professionalism, which may impact the customer's perception of the service.
+            - **3**: The tone is polite and professional, but may have some inconsistencies or lack a personal touch, potentially affecting the overall customer experience.
+            - **4**: The tone is consistently polite, professional, and engaging, enhancing the customer's experience and demonstrating a high level of customer service.
+            - **5**: The tone is consistently polite, professional, and empathetic, creating a positive and supportive customer experience that exceeds expectations.
 
-        Question: {question}
-        Trainee's response: {response}
-        Ideal response: {ideal}
-        Accuracy Feedback: {feedback} 
-        """
-    )
+            Please give your response in this JSON format, where score is an integer and all feedbacks are a string:
+            "Accuracy": score, "Comprehension": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Comprehension Feedback": comprehension_feedback, "Tone Feedback": tone_feedback, "Feedback": feedback_response
+            Do not include backticks and do wrap the feedback in quotation marks.
+
+            Question: {question}
+            Trainee's response: {response}
+            Ideal response: {ideal}
+            Accuracy Feedback: {feedback}
+            """
+        )
 
 
     result = qa.run({"question": prompt_template.format(
@@ -191,4 +213,50 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
     )})
 
     return result
+
+def get_default_prompt():
+    return """
+    I will give you a question, a customer service trainee's response to that question, and the ideal response to that question.
+    Please assess the trainee's response to the question. Do not actually answer the question, but evaluate the answer only using the context given and the ideal answer.
+    Please give the trainee's response a score out of 5 for accuracy, comprehension, and tone. Accuracy refers to if the factually correct answers were provided, comprehension refers to whether the answer has enough details, is concise and demonstrates that the question was fully understood, and tone refers to whether the tone of the answer is respectful and professional.
+    Please take note that the ideal response scored 5 for accuracy, comprehension, and tone and use it as a point of reference.
+    Please also give some general feedback for improvement.
+    Please incorporate the following text in your Accuracy Feedback: {feedback}
+
+    If the trainee's response contains exact dates and monetary figures that are not in the question and do not match the ideal response, please ignore it when grading accuracy. For exact dates and monetary figures that are in the question, the trainee’s response should contain such information, even if they are not in the ideal response.
+
+    It is acceptable to give the trainee full marks if they answered similarly to the ideal response after ignoring what should be ignored based on the earlier instructions for exact dates and figures. If you do not have improvements to give, please also give a score of 5. Do not mention the existence of the ideal response when providing your feedback.
+
+    Use the following rubric as a guide when evaluating the response:
+
+    **Accuracy**
+    - **1**: The response contains significant errors and inaccuracies, possibly leading to misinformation or confusion for the customer.
+    - **2**: The response has several inaccuracies and lacks attention to detail, which could impact the customer's understanding of the information provided.
+    - **3**: The response is mostly accurate but may contain minor errors that do not significantly impact the overall understanding.
+    - **4**: The response is accurate with very few, if any, errors, ensuring that the information provided is reliable and correct.
+    - **5**: The response is completely accurate and error-free, demonstrating a high level of attention to detail and precision in the information provided.
+
+    **Comprehension**
+    - **1**: The response demonstrates a lack of understanding of the customer's query, possibly leading to irrelevant or unhelpful information being provided.
+    - **2**: The response shows partial understanding of the customer's query, but may miss key points or fail to address the customer's needs comprehensively.
+    - **3**: The response demonstrates a good understanding of the customer's query, addressing the main points effectively and providing relevant information.
+    - **4**: The response shows a clear understanding of the customer's query, ensuring that all aspects of the customer's query are addressed accurately and comprehensively.
+    - **5**: The response demonstrates an exceptional understanding of the customer's query, even in ambiguous situations, providing insightful and comprehensive information that exceeds the customer's expectations.
+
+    **Tone**
+    - **1**: The tone is inappropriate, unprofessional, or rude, potentially leading to a negative customer experience.
+    - **2**: The tone is somewhat inappropriate or lacks professionalism, which may impact the customer's perception of the service.
+    - **3**: The tone is polite and professional, but may have some inconsistencies or lack a personal touch, potentially affecting the overall customer experience.
+    - **4**: The tone is consistently polite, professional, and engaging, enhancing the customer's experience and demonstrating a high level of customer service.
+    - **5**: The tone is consistently polite, professional, and empathetic, creating a positive and supportive customer experience that exceeds expectations.
+
+    Please give your response in this JSON format, where score is an integer and all feedbacks are a string:
+    "Accuracy": score, "Comprehension": score, "Tone": score, "Accuracy Feedback": accuracy_feedback, "Comprehension Feedback": comprehension_feedback, "Tone Feedback": tone_feedback, "Feedback": feedback_response
+    Do not include backticks and do wrap the feedback in quotation marks.
+
+    Question: {question}
+    Trainee's response: {response}
+    Ideal response: {ideal}
+    Accuracy Feedback: {feedback}
+    """
 

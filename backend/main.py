@@ -12,6 +12,9 @@ from models.question import QuestionModel
 from models.ai_improvements import AIImprovementsModel
 from models.manual_feedback import ManualFeedbackModel
 from models.association_tables import user_scheme_association
+from models.prompt import PromptModel
+from models.system import SystemModel
+from schemas.prompt import PromptBase
 from session import create_session, engine, open_session
 from schemas.attempt import AttemptCreate, AttemptResponse, AttemptBase
 from schemas.user import UserBase, UserInput, UserResponseSchema
@@ -20,10 +23,11 @@ from schemas.question import QuestionBase
 from schemas.manual_feedback import ManualFeedbackBase
 from schemas.ai_improvements import AIImprovementsBase
 from schemas.table import TableBase
+from schemas.system import SystemCreate, SystemUpdate, System
 from config import Base, config
 from sqlalchemy import func, distinct
 from fastapi.middleware.cors import CORSMiddleware
-from ML.openAI import process_response, openAI_response
+from ML.openAI import process_response, openAI_response, get_default_prompt
 from ML.ai_analysis import analyse_improvements
 import uuid
 import os
@@ -36,6 +40,7 @@ import pandas as pd
 from io import StringIO
 from models.token import Token  # Import the Token model
 from fastapi.responses import JSONResponse
+from typing import List
 
 # Import OAuth2PasswordBearer
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -1683,6 +1688,122 @@ async def scan_create_ai_improvements(
             logging.info(f"AI Improvement created for question_id: {question.question_id}, user_id: {user.uuid}")
 
     return {"message": f"{improvements_created} AI improvements created."}
+
+
+@app.put("/prompt", status_code=status.HTTP_200_OK)
+async def create_or_update_prompt(
+    prompt: PromptBase,
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Fetch the existing prompt
+    existing_prompt = db.query(PromptModel).first()
+    if existing_prompt:
+        # Update the prompt text
+        existing_prompt.prompt_text = prompt.prompt_text
+        db.commit()
+        db.refresh(existing_prompt)
+        message = "Prompt updated successfully"
+        prompt_data = existing_prompt.to_dict()
+    else:
+        # Create a new prompt record
+        new_prompt = PromptModel(prompt_text=prompt.prompt_text)
+        db.add(new_prompt)
+        db.commit()
+        db.refresh(new_prompt)
+        message = "Prompt updated successfully"
+        prompt_data = new_prompt.to_dict()
+
+    return {"message": message, "prompt": prompt_data}
+
+@app.delete("/prompt", status_code=status.HTTP_200_OK)
+async def delete_prompt(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Fetch the existing prompt
+    existing_prompt = db.query(PromptModel).first()
+    if existing_prompt:
+        # Delete the prompt
+        db.delete(existing_prompt)
+        db.commit()
+        return {"message": "Reverted to default prompt."}
+    else:
+        return {"message": "Already using default prompt."}
+
+@app.get("/prompt/current", status_code=status.HTTP_200_OK)
+async def get_current_prompt(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Fetch the current prompt
+    existing_prompt = db.query(PromptModel).first()
+    if existing_prompt and existing_prompt.prompt_text.strip():
+        prompt_text = existing_prompt.prompt_text
+        prompt_type = "dynamic"
+    else:
+        # Use the default prompt
+        prompt_text = get_default_prompt()
+        prompt_type = "default"
+
+    return {
+        "prompt_text": prompt_text,
+        "prompt_type": prompt_type
+    }
+
+## SYSTEM NAMES AND URL ROUTES ##
+@app.get("/systems", response_model=List[System], status_code=status.HTTP_200_OK)
+async def get_systems(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    systems = db.query(SystemModel).all()
+    return systems
+
+@app.post("/systems", response_model=System, status_code=status.HTTP_201_CREATED)
+async def add_system(
+    system: SystemCreate, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    new_system = SystemModel(name=system.name, url=system.url)
+    db.add(new_system)
+    db.commit()
+    db.refresh(new_system)
+    return new_system
+
+@app.put("/systems/{system_id}", response_model=System, status_code=status.HTTP_200_OK)
+async def update_system(
+    system_id: int, 
+    system: SystemUpdate, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    db_system = db.query(SystemModel).filter(SystemModel.id == system_id).first()
+    if not db_system:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System not found")
+    db_system.name = system.name
+    db_system.url = system.url
+    db.commit()
+    db.refresh(db_system)
+    return db_system
+
+@app.delete("/systems/{system_id}", status_code=status.HTTP_200_OK)
+async def delete_system(
+    system_id: int, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    db_system = db.query(SystemModel).filter(SystemModel.id == system_id).first()
+    if not db_system:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System not found")
+    db.delete(db_system)
+    db.commit()
+    return {"message": "System deleted successfully"}
 
 ## S3 BUCKET ROUTES ##
 def get_s3_image_urls(bucket_name, prefix):

@@ -27,7 +27,7 @@ from schemas.system import SystemCreate, SystemUpdate, System
 from config import Base, config
 from sqlalchemy import func, distinct
 from fastapi.middleware.cors import CORSMiddleware
-from ML.openAI import process_response, openAI_response, get_default_prompt
+from ML.openAI import process_response, openAI_response, get_default_prompt, update_vectorstore, DYNAMIC_CSV_PATH
 from ML.ai_analysis import analyse_improvements
 import uuid
 import os
@@ -1689,7 +1689,7 @@ async def scan_create_ai_improvements(
 
     return {"message": f"{improvements_created} AI improvements created."}
 
-
+## DYNAMIC PROMPT ROUTES ##
 @app.put("/prompt", status_code=status.HTTP_200_OK)
 async def create_or_update_prompt(
     prompt: PromptBase,
@@ -1701,13 +1701,14 @@ async def create_or_update_prompt(
     if existing_prompt:
         # Update the prompt text
         existing_prompt.prompt_text = prompt.prompt_text
+        existing_prompt.updated_by = current_user.name
         db.commit()
         db.refresh(existing_prompt)
         message = "Prompt updated successfully"
         prompt_data = existing_prompt.to_dict()
     else:
         # Create a new prompt record
-        new_prompt = PromptModel(prompt_text=prompt.prompt_text)
+        new_prompt = PromptModel(prompt_text=prompt.prompt_text, updated_by=current_user.name)
         db.add(new_prompt)
         db.commit()
         db.refresh(new_prompt)
@@ -1745,15 +1746,54 @@ async def get_current_prompt(
     if existing_prompt and existing_prompt.prompt_text.strip():
         prompt_text = existing_prompt.prompt_text
         prompt_type = "dynamic"
+        updated_by = existing_prompt.updated_by
+        updated_at = existing_prompt.updated_at
     else:
         # Use the default prompt
         prompt_text = get_default_prompt()
         prompt_type = "default"
+        updated_by = None
+        updated_at = None
 
     return {
         "prompt_text": prompt_text,
-        "prompt_type": prompt_type
+        "prompt_type": prompt_type,
+        "updated_by": updated_by,
+        "updated_at": updated_at
     }
+
+## DYNAMIC VECTORSTORE ROUTES ##
+@app.post("/upload-faq-csv", status_code=201)
+async def upload_faq_csv(
+    file: UploadFile = File(...), 
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Ensure the uploaded file is a CSV
+    if file.content_type != 'text/csv':
+        raise HTTPException(status_code=400, detail="Invalid file format. Please upload a CSV file.")
+
+    # Save the uploaded file to DYNAMIC_CSV_PATH
+    contents = await file.read()
+    with open(DYNAMIC_CSV_PATH, 'wb') as f:
+        f.write(contents)
+
+    # Call the function in openAI.py to update the vectorstore
+    update_vectorstore()
+
+    return {"message": "FAQ CSV uploaded and vectorstore updated successfully."}
+
+@app.delete("/revert-faq-csv", status_code=200)
+async def revert_faq_csv(
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Delete the dynamic CSV file
+    if os.path.exists(DYNAMIC_CSV_PATH):
+        os.remove(DYNAMIC_CSV_PATH)
+        # Re-initialize the vectorstore to use the default CSV
+        update_vectorstore()
+        return {"message": "Reverted to default FAQ CSV and vectorstore updated."}
+    else:
+        return {"message": "Already using default."}
 
 ## SYSTEM NAMES AND URL ROUTES ##
 @app.get("/systems", response_model=List[System], status_code=status.HTTP_200_OK)

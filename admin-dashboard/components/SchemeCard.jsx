@@ -3,7 +3,7 @@ import { useState, useEffect} from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 // images
-import caseimg from "../public/case_scenario.png";
+import caseimg from "../public/new_case_img.png";
 import { TiDelete } from "react-icons/ti";
 
 export default function SchemeCard({
@@ -62,7 +62,7 @@ export default function SchemeCard({
         <div className="font-bold pt-2 pb-4">{localSchemeName}</div>
       )}
       <div className="flex flex-row gap-2">
-        <Image src={caseimg} alt="case icon" width="auto" height="auto" />
+        <Image src={caseimg} alt="case icon" width={20} height={20} />
         <span>Case Scenarios: {questions}</span>
       </div>
       {scheme_button ? (

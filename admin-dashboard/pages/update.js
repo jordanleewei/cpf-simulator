@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import isAuth from "../components/isAuth.jsx"; 
 import { Input, Button } from "@nextui-org/react";
+import { FaRegTrashCan } from "react-icons/fa6";
 
 function UpdatePage() {
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
@@ -14,6 +15,13 @@ function UpdatePage() {
   const [promptType, setPromptType] = useState("");
   const [editPromptState, setEditPromptState] = useState(false);
   const [promptMessage, setPromptMessage] = useState("");
+  const [lastUpdatedBy, setLastUpdatedBy] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState("");
+
+  // State variables for vectorstore management
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvUploadMessage, setCsvUploadMessage] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   // State variables for system management
   const [systems, setSystems] = useState([]);
@@ -47,6 +55,8 @@ function UpdatePage() {
           setPromptText(data.prompt_text);
           setOriginalPromptText(data.prompt_text);
           setPromptType(data.prompt_type);
+          setLastUpdatedBy(data.updated_by || "DEFAULT"); 
+          setLastUpdatedAt(data.updated_at ? new Date(data.updated_at).toLocaleString() : "NO DATE AVAILABLE"); 
         } else {
           console.error("Failed to fetch prompt:", res.status);
           // Handle unauthorized access
@@ -168,6 +178,85 @@ function UpdatePage() {
   const handleCancelPrompt = () => {
     setPromptText(originalPromptText);
     setEditPromptState(false);
+  };
+
+  // Vectorstore management handlers
+  const handleUploadCsv = async () => {
+    const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+    const token = loggedUser ? loggedUser.access_token : null;
+  
+    if (!token) {
+      router.push("/");
+      return;
+    }
+  
+    if (!csvFile) {
+      setCsvUploadMessage("Please select a CSV file to upload.");
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append("file", csvFile);
+
+    setIsUploading(true); // Start loading
+  
+    try {
+      const res = await fetch(`${API_URL}/upload-faq-csv`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+  
+      if (res.ok) {
+        const data = await res.json();
+        setCsvUploadMessage(data.message);
+        setCsvFile(null); // Reset the file input
+      } else {
+        const errorData = await res.json();
+        setCsvUploadMessage(`Failed to upload CSV: ${errorData.detail}`);
+      }
+    } catch (error) {
+      console.error("Error uploading CSV:", error);
+      setCsvUploadMessage("Error uploading CSV");
+    } finally {
+      setIsUploading(false); // End loading
+    }
+  };
+  
+  const handleRevertVectorstore = async () => {
+    const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+    const token = loggedUser ? loggedUser.access_token : null;
+  
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
+    setIsUploading(true); // Start loading
+  
+    try {
+      const res = await fetch(`${API_URL}/revert-faq-csv`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (res.ok) {
+        const data = await res.json();
+        setCsvUploadMessage(data.message);
+      } else {
+        const errorData = await res.json();
+        setCsvUploadMessage(`Failed to revert vectorstore: ${errorData.detail}`);
+      }
+    } catch (error) {
+      console.error("Error reverting vectorstore:", error);
+      setCsvUploadMessage("Error reverting vectorstore");
+    } finally {
+      setIsUploading(false); // End loading
+    }
   };
 
   // System management handlers
@@ -311,7 +400,7 @@ function UpdatePage() {
                 Edit
               </button>
               <button
-                className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
+                className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
                 onClick={handleRevertToDefault}
               >
                 Revert to Default Prompt
@@ -337,6 +426,64 @@ function UpdatePage() {
             {promptText}
           </pre>
         )}
+        {/* Display last updated by user and time */}
+        <div className="text-gray-500 text-sm mt-2">
+          Last updated by: {lastUpdatedBy} on {lastUpdatedAt}
+        </div>
+      </div>
+
+      <div className="bg-white min-w-full rounded-md p-6 mt-8">
+        <p className="font-bold text-xl mb-4">Vectorstore Management</p>
+        {csvUploadMessage && (
+          <div className="mb-4 text-green-600 font-semibold">{csvUploadMessage}</div>
+        )}
+        <div className="flex flex-col gap-4">
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) => setCsvFile(e.target.files[0])}
+            disabled={isUploading}
+          />
+          <button
+            className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md w-fit"
+            onClick={handleUploadCsv}
+            disabled={!csvFile || isUploading}
+          >
+            Upload CSV
+          </button>
+          <button
+            className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md w-fit"
+            onClick={handleRevertVectorstore}
+            disabled={isUploading}
+          >
+            Revert to Default Vectorstore
+          </button>
+          {isUploading && (
+            <div className="flex items-center gap-2 mt-4">
+              <svg
+                className="animate-spin h-5 w-5 text-dark-green"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                ></path>
+              </svg>
+              <span>Updating vectorstore, please wait...</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="bg-white min-w-full rounded-md p-6">
@@ -407,11 +554,11 @@ function UpdatePage() {
                     />
                 </td>
                 <td className="text-center py-2 px-3 border">
-                    <button
-                    className="text-white bg-red-500 hover:bg-red-700 px-2 rounded-md"
-                    onClick={() => handleDeleteInEditMode(index)}
-                    >
-                    Delete
+                    <button className="flex items-center">
+                      <FaRegTrashCan
+                        className="text-red-500 ml-0.5"
+                        onClick={() => handleDeleteInEditMode(index)}
+                      />
                     </button>
                 </td>
                 </tr>

@@ -1,5 +1,5 @@
 from langchain_huggingface import HuggingFaceEmbeddings  # Updated import
-from langchain_chroma import Chroma  # Updated import
+from langchain_community.vectorstores import Chroma # Updated import
 from langchain_core.prompts import PromptTemplate 
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -16,36 +16,92 @@ from fuzzywuzzy import fuzz
 
 load_dotenv()
 
-file_path = "./ML/faq_data_11Jul.csv"
-vectorstore_path = "./ML/vectorstore"  # Define where to save the vectorstore
+# Define paths
+DEFAULT_FILE_PATH = "./ML/faq_data_11Jul.csv"
+DYNAMIC_CSV_PATH = "./ML/dynamic_faq.csv"  # Path to dynamic CSV uploaded by user
+VECTORSTORE_PATH = "./ML/vectorstore"  # Path to save the vectorstore
 
-# Load the CSV file
-loader = CSVLoader(file_path=file_path, encoding='utf-8')
-data = loader.load()
+# Global retriever
+retriever = None
 
-# Split the documents
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-docs = text_splitter.split_documents(data)
-
-# Load the embeddings
-modelPath = "sentence-transformers/all-MiniLM-l6-v2"
-model_kwargs = {'device': 'cpu'}
-encode_kwargs = {'normalize_embeddings': False}
-
-embeddings = HuggingFaceEmbeddings(
-    model_name=modelPath,
-    model_kwargs=model_kwargs,
-    encode_kwargs=encode_kwargs
-)
-
-# Check if the vectorstore already exists, otherwise create and save it
-if os.path.exists(vectorstore_path):
-    vectorstore = Chroma(persist_directory=vectorstore_path, embedding_function=embeddings)
-else:
+def load_vectorstore(file_path, vectorstore_path):
+    # Load the CSV file
+    loader = CSVLoader(file_path=file_path, encoding='utf-8')
+    data = loader.load()
+    
+    # Split the documents
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    docs = text_splitter.split_documents(data)
+    
+    # Load the embeddings
+    modelPath = "sentence-transformers/all-MiniLM-l6-v2"
+    model_kwargs = {'device': 'cpu'}
+    encode_kwargs = {'normalize_embeddings': False}
+    
+    embeddings = HuggingFaceEmbeddings(
+        model_name=modelPath,
+        model_kwargs=model_kwargs,
+        encode_kwargs=encode_kwargs
+    )
+    
+    # Create and save the vectorstore
     vectorstore = Chroma.from_documents(documents=docs, embedding=embeddings, persist_directory=vectorstore_path)
     vectorstore.persist()
+    return vectorstore
 
-retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+def initialize_vectorstore():
+    global retriever
+    # Load the embeddings
+    modelPath = "sentence-transformers/all-MiniLM-l6-v2"
+    model_kwargs = {'device': 'cpu'}
+    encode_kwargs = {'normalize_embeddings': False}
+    
+    embeddings = HuggingFaceEmbeddings(
+        model_name=modelPath,
+        model_kwargs=model_kwargs,
+        encode_kwargs=encode_kwargs
+    )
+    
+    # Use the dynamic CSV if it exists, otherwise use the default
+    if os.path.exists(DYNAMIC_CSV_PATH):
+        file_path = DYNAMIC_CSV_PATH
+    else:
+        file_path = DEFAULT_FILE_PATH
+
+    # Check if the vectorstore already exists, otherwise create and save it
+    if os.path.exists(VECTORSTORE_PATH):
+        vectorstore = Chroma(persist_directory=VECTORSTORE_PATH, embedding_function=embeddings)
+    else:
+        vectorstore = load_vectorstore(file_path, VECTORSTORE_PATH)
+    
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+
+def update_vectorstore():
+    global retriever
+    # Load the embeddings
+    modelPath = "sentence-transformers/all-MiniLM-l6-v2"
+    model_kwargs = {'device': 'cpu'}
+    encode_kwargs = {'normalize_embeddings': False}
+    
+    embeddings = HuggingFaceEmbeddings(
+        model_name=modelPath,
+        model_kwargs=model_kwargs,
+        encode_kwargs=encode_kwargs
+    )
+    
+    # Use the dynamic CSV if it exists, otherwise use the default
+    if os.path.exists(DYNAMIC_CSV_PATH):
+        file_path = DYNAMIC_CSV_PATH
+    else:
+        file_path = DEFAULT_FILE_PATH
+
+    # Rebuild the vectorstore
+    vectorstore = load_vectorstore(file_path, VECTORSTORE_PATH)
+    # Re-initialize the retriever
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+
+# Initialize the retriever when the module is imported
+initialize_vectorstore()
 
 def process_response(res):
     try:

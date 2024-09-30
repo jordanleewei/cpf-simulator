@@ -13,6 +13,7 @@ function AddScheme() {
   const [newImageFile, setNewImageFile] = useState(null);
   const [deleteImageUrl, setDeleteImageUrl] = useState(""); // Manage the image to delete
   const [showDeleteModal, setShowDeleteModal] = useState(false); // Control modal visibility
+  const [isUploading, setIsUploading] = useState(false); // Track upload status
 
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
@@ -43,12 +44,13 @@ function AddScheme() {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // Function to handle image file upload without selecting the image
-  const handleImageUpload = async () => {
-    if (!newImageFile) return null;
+  // Function to handle image file upload immediately after selecting the image
+  const handleImageUpload = async (file) => {
+    if (!file) return null;
 
     const formData = new FormData();
-    formData.append("file", newImageFile);
+    formData.append("file", file);
+    setIsUploading(true); // Set uploading state
 
     try {
       const response = await fetch(`${API_URL}/upload-image`, {
@@ -64,13 +66,13 @@ function AddScheme() {
         throw new Error("Image upload failed");
       }
 
-      // Add the uploaded image to the list but don't select it
+      // Add the uploaded image to the list and select it
       setImageUrls((prev) => [...prev, data.s3_url]);
-      setNewImageFile(null); // Clear the file input
-
-      return data.s3_url;
+      setSelectedImage(data.s3_url);
+      setIsUploading(false); // Reset uploading state
     } catch (error) {
       console.error("Error uploading image:", error);
+      setIsUploading(false); // Reset uploading state in case of error
       throw error;
     }
   };
@@ -82,13 +84,15 @@ function AddScheme() {
     try {
       const standardizedSchemeName = capitalize(schemeName);
 
-      // If a new image was uploaded, use its URL, otherwise use the selected one
-      const uploadedImageUrl = newImageFile ? await handleImageUpload() : selectedImage;
+      if (!selectedImage) {
+        alert("Please upload and select an image.");
+        return;
+      }
 
       const response = await fetch(
         `${API_URL}/scheme?scheme_name=${encodeURIComponent(
           standardizedSchemeName
-        )}&file_url=${encodeURIComponent(uploadedImageUrl)}`,
+        )}&file_url=${encodeURIComponent(selectedImage)}`,
         {
           method: "POST",
           headers: {
@@ -97,7 +101,7 @@ function AddScheme() {
           },
           body: JSON.stringify({
             scheme_name: standardizedSchemeName,
-            file_url: uploadedImageUrl,
+            file_url: selectedImage,
           }),
         }
       );
@@ -224,9 +228,11 @@ function AddScheme() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setNewImageFile(e.target.files[0])}
+                onChange={(e) => handleImageUpload(e.target.files[0])}
                 className="mt-2"
+                disabled={isUploading} // Disable input while uploading
               />
+              {isUploading && <span>Uploading...</span>} {/* Show upload status */}
             </div>
           </div>
           <div className="flex justify-center items-end w-full mt-4">
@@ -240,6 +246,7 @@ function AddScheme() {
               type="button"
               className="bg-dark-green hover:bg-darker-green p-1 px-10 rounded-md text-white m-4"
               onClick={addScheme}
+              disabled={!selectedImage || !schemeName} // Disable if no image or name
             >
               Save
             </Button>

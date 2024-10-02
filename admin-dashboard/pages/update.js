@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import isAuth from "../components/isAuth.jsx"; 
 import { Input, Button } from "@nextui-org/react";
 import { FaRegTrashCan } from "react-icons/fa6";
+import * as XLSX from 'xlsx';
+import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
 function UpdatePage() {
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
@@ -17,6 +19,7 @@ function UpdatePage() {
   const [promptMessage, setPromptMessage] = useState("");
   const [lastUpdatedBy, setLastUpdatedBy] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState("");
+  const [downloadMessage, setDownloadMessage] = useState("");
 
   // State variables for vectorstore management
   const [csvFile, setCsvFile] = useState(null);
@@ -29,6 +32,16 @@ function UpdatePage() {
   const [editMode, setEditMode] = useState(false);
   const [editedSystems, setEditedSystems] = useState([]);
   const [systemMessage, setSystemMessage] = useState("");
+
+  useEffect(() => {
+    if (downloadMessage) {
+      const timer = setTimeout(() => {
+        setDownloadMessage(""); // Clear the message after 3 seconds
+      }, 3000);
+
+      return () => clearTimeout(timer); // Cleanup the timer if the component unmounts
+    }
+  }, [downloadMessage]);
 
   // Fetch prompt and systems when the component mounts
   useEffect(() => {
@@ -173,6 +186,41 @@ function UpdatePage() {
       console.error("Error reverting to default prompt:", error);
       setPromptMessage("Error reverting to default prompt");
     }
+  };
+
+  // Function to convert prompt details to CSV
+  const convertPromptToExcel = () => {
+    const worksheetData = [
+      ["Prompt Text", "Updated By", "Updated At"],
+      [promptText, lastUpdatedBy, lastUpdatedAt],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Prompt Details");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    return excelBuffer;
+  };
+
+  // Function to download the prompt details as an Excel file
+  const handleDownloadExcel = () => {
+    if (promptType !== "dynamic") {
+      setDownloadMessage("No dynamic prompt available to download.");
+      return;
+    }
+
+    const excelBuffer = convertPromptToExcel();
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `prompt_${Date.now()}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setDownloadMessage(""); // Clear message after successful download
   };
 
   const handleCancelPrompt = () => {
@@ -408,9 +456,20 @@ function UpdatePage() {
             </div>
           )}
         </div>
-
+        <div className="w-full h-max-content flex justify-end items-center font-bold">
+            <button type="button" className="button" onClick={handleDownloadExcel}>
+              <Download fontSize="medium" />
+              Download Excel
+            </button>
+        </div>
+    
         {promptMessage && (
           <div className="mb-4 text-green-600 font-semibold">{promptMessage}</div>
+        )}
+        {/* Display message for CSV download */}
+        {downloadMessage && (
+          <div className="mt-2 text-red-500 text-sm">{downloadMessage}
+        </div>
         )}
 
         {editPromptState ? (

@@ -129,13 +129,33 @@ function UpdatePage() {
         setOriginalPromptText(promptText);
         setPromptType("dynamic");
         setEditPromptState(false);
-      } else {
-        console.error("Failed to update prompt:", res.status);
-        setPromptMessage("Failed to update prompt");
+
+        // Fetch updated prompt data to show the latest "updated by" and "updated at" fields
+        const updatedPromptResponse = await fetch(`${API_URL}/prompt/current`, {
+          method: "GET",
+          headers: {
+              Authorization: `Bearer ${token}`,
+          },
+      });
+
+      if (updatedPromptResponse.ok) {
+          const updatedPromptData = await updatedPromptResponse.json();
+          // Set updated values from the latest prompt
+          setPromptText(updatedPromptData.prompt_text);
+          setLastUpdatedBy(updatedPromptData.updated_by || "DEFAULT");
+          setLastUpdatedAt(
+              updatedPromptData.updated_at
+                  ? new Date(updatedPromptData.updated_at).toLocaleString()
+                  : "NO DATE AVAILABLE"
+          );
       }
+    } else {
+      console.error("Failed to update prompt:", res.status);
+      setPromptMessage("Failed to update prompt");
+    }
     } catch (error) {
-      console.error("Error updating prompt:", error);
-      setPromptMessage("Error updating prompt");
+    console.error("Error updating prompt:", error);
+    setPromptMessage("Error updating prompt");
     }
   };
 
@@ -173,6 +193,12 @@ function UpdatePage() {
           setPromptText(data2.prompt_text);
           setOriginalPromptText(data2.prompt_text);
           setPromptType(data2.prompt_type);
+          setLastUpdatedBy(data2.updated_by || "DEFAULT");
+          setLastUpdatedAt(
+              data2.updated_at
+                  ? new Date(data2.updated_at).toLocaleString()
+                  : "NO DATE AVAILABLE"
+          );
           setEditPromptState(false);
         } else {
           console.error("Failed to fetch default prompt:", res2.status);

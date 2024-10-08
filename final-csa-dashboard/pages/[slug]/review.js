@@ -100,8 +100,8 @@ function ReviewPage({ user }) {
       "System URL",
       "Accuracy Feedback",
       "Accuracy Score",
-      "Precision Feedback",
-      "Precision Score",
+      "Comprehension Feedback",
+      "Comprehension Score",
       "Tone Feedback",
       "Tone Score",
     ];

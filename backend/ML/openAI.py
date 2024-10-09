@@ -1,5 +1,5 @@
 from langchain_huggingface import HuggingFaceEmbeddings  # Updated import
-from langchain_chroma import Chroma  # Updated import
+from langchain_community.vectorstores import Chroma  # Updated import
 from langchain_core.prompts import PromptTemplate 
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -13,7 +13,7 @@ from fuzzywuzzy import fuzz
 
 load_dotenv()
 
-file_path = "./ML/faq_data_11Jul.csv"
+file_path = "./ML/faq_data_9Oct.csv"
 vectorstore_path = "./ML/vectorstore"  # Define where to save the vectorstore
 
 # Load the CSV file

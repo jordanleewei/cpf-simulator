@@ -17,7 +17,7 @@ from fuzzywuzzy import fuzz
 load_dotenv()
 
 # Define paths
-DEFAULT_FILE_PATH = "./ML/faq_data_11Jul.csv"
+DEFAULT_FILE_PATH = "./ML/faq_data_9Oct.csv"
 DYNAMIC_CSV_PATH = "./ML/dynamic_faq.csv"  # Path to dynamic CSV uploaded by user
 VECTORSTORE_PATH = "./ML/vectorstore"  # Path to save the vectorstore
 

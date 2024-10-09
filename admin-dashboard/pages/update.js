@@ -459,7 +459,7 @@ function UpdatePage() {
                 Save
               </button>
               <button
-                className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
+                className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
                 onClick={handleCancelPrompt}
               >
                 Cancel
@@ -482,6 +482,7 @@ function UpdatePage() {
             </div>
           )}
         </div>
+
         <div className="w-full h-max-content flex justify-end items-center font-bold">
             <button type="button" className="button" onClick={handleDownloadExcel}>
               <Download fontSize="medium" />
@@ -498,19 +499,37 @@ function UpdatePage() {
         </div>
         )}
 
-        {editPromptState ? (
-          <textarea
-            value={promptText}
-            onChange={(e) => setPromptText(e.target.value)}
-            rows={20}
-            cols={80}
-            className="w-full border border-gray-300 p-2 rounded-md"
-          />
-        ) : (
-          <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-md">
+        {/* Side-by-Side Prompt View */}
+        {editPromptState && (
+          <div className="flex flex-row gap-4">
+            {/* Old Prompt */}
+            <div className="w-1/2">
+              <p className="font-semibold mb-2">Old Prompt:</p>
+              <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-md h-full overflow-auto max-h-[400px]">
+                {originalPromptText}
+              </pre>
+            </div>
+
+            {/* New Prompt */}
+            <div className="w-1/2">
+              <p className="font-semibold mb-2">New Prompt (Editing):</p>
+              <textarea
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                rows={20}
+                cols={40}
+                className="w-full border border-gray-300 p-2 rounded-md"
+              />
+            </div>
+          </div>
+        )}
+
+        {!editPromptState && (
+          <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-md h-full overflow-auto max-h-[400px]">
             {promptText}
           </pre>
         )}
+
         {/* Display last updated by user and time */}
         <div className="text-gray-500 text-sm mt-2">
           Last updated by: {lastUpdatedBy} on {lastUpdatedAt}

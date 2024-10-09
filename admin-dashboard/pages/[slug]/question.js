@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Select from "react-select";
+import { IoMdAdd, IoMdRemove } from "react-icons/io";
 import isAuth from "../../components/isAuth";
 import BackBar from "../../components/BackBar";
 
@@ -16,11 +18,26 @@ function Question() {
     question_details: "",
     ideal: "",
     scheme_name: "",
-    ideal_system_name: "",
-    ideal_system_url: "",
+    ideal_systems: [{ name: "", url: "" }]
   });
+  
+  const [defaultSystemsList, setDefaultSystemsList] = useState([]);
 
   useEffect(() => {
+    async function fetchSystems() {
+      try {
+        const res = await fetch(`${API_URL}/systems`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch systems");
+        }
+        const data = await res.json();
+        // Format the systems data for react-select dropdown
+        setDefaultSystemsList(data.map((sys) => ({ label: sys.name, value: sys.url })));
+      } catch (error) {
+        console.error("Error fetching systems:", error);
+      }
+    }
+
     async function getData() {
       if (router.isReady) {
         try {
@@ -36,8 +53,10 @@ function Question() {
               question_details: data.question_details || "",
               ideal: data.ideal || "",
               scheme_name: data.scheme_name || "",
-              ideal_system_name: data.ideal_system_name || "",
-              ideal_system_url: data.ideal_system_url || "",
+              ideal_systems: data.ideal_system_name.split(", ").map((name, index) => ({
+                name,
+                url: data.ideal_system_url.split(", ")[index] || "",
+              })),
             });
           }
         } catch (e) {
@@ -46,7 +65,8 @@ function Question() {
       }
     }
 
-    // Call getData when the component is mounted and when refetch is triggered
+
+    fetchSystems();
     getData();
   }, [router.isReady, API_URL, router.query.slug, shouldRefetch]);
 
@@ -72,12 +92,18 @@ function Question() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const idealSystemNames = formState.ideal_systems.map(system => system.name).join(", ");
+      const idealSystemUrls = formState.ideal_systems.map(system => system.url).join(", ");
       const res = await fetch(`${API_URL}/question/${router.query.slug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formState),
+        body: JSON.stringify({
+          ...formState,
+          ideal_system_name: idealSystemNames,
+          ideal_system_url: idealSystemUrls,
+        }),
       });
 
       if (!res.ok) {
@@ -90,6 +116,35 @@ function Question() {
     } catch (error) {
       console.error("Error updating question:", error);
     }
+  };
+
+  // Handle system selection for react-select
+  const handleSystemSelection = (index, selectedOption) => {
+    const newIdealSystems = [...formState.ideal_systems];
+    newIdealSystems[index].name = selectedOption.label;
+    newIdealSystems[index].url = selectedOption.value;
+    setFormState((prevState) => ({
+      ...prevState,
+      ideal_systems: newIdealSystems,
+    }));
+  };
+
+  // Add new system row
+  const addIdealSystemRow = () => {
+    setFormState((prevState) => ({
+      ...prevState,
+      ideal_systems: [...prevState.ideal_systems, { name: "", url: "" }],
+    }));
+  };
+
+  // Remove system row
+  const removeIdealSystemRow = (index) => {
+    const newIdealSystems = [...formState.ideal_systems];
+    newIdealSystems.splice(index, 1);
+    setFormState((prevState) => ({
+      ...prevState,
+      ideal_systems: newIdealSystems,
+    }));
   };
 
   if (!question) {
@@ -189,30 +244,50 @@ function Question() {
 
             <div>
               <label>
-                <span className="font-bold">Verified System Names:</span>
-                <input
-                  type="text"
-                  name="ideal_system_name"
-                  value={formState.ideal_system_name}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  style={{ width: "100%", padding: "10px" }}
-                />
+                <span className="font-bold">Verified System Names and URLs:</span>
               </label>
-            </div>
+              {formState.ideal_systems.map((system, index) => (
+                <div key={index} className="flex justify-between w-full mt-2">
+                  <div className="w-1/2">
+                    <Select
+                      options={defaultSystemsList}
+                      onChange={(selectedOption) => handleSystemSelection(index, selectedOption)}
+                      value={system.name ? { label: system.name, value: system.url } : null}
+                      placeholder="Select system name"
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <textarea
+                      value={system.url}
+                      readOnly
+                      className="w-full border border-gray-300 p-2 rounded-md"
+                      placeholder="System URL"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Add system row button */}
+                    <button
+                      type="button"
+                      className="bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center p-1"
+                      onClick={addIdealSystemRow}
+                    >
+                      <IoMdAdd className="text-black" />
+                    </button>
 
-            <div>
-              <label>
-                <span className="font-bold">Verified System URLs:</span>
-                <input
-                  type="text"
-                  name="ideal_system_url"
-                  value={formState.ideal_system_url}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  style={{ width: "100%", padding: "10px" }}
-                />
-              </label>
+                    {/* Remove system row button */}
+                    {formState.ideal_systems.length > 1 && (
+                      <button
+                        type="button"
+                        className="bg-red-500 hover:bg-red-600 rounded-full w-8 h-8 flex justify-center items-center p-1"
+                        onClick={() => removeIdealSystemRow(index)}
+                      >
+                        <IoMdRemove className="text-white" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex justify-between mt-4">
@@ -255,20 +330,17 @@ function Question() {
               <p>{question.ideal}</p>
             </div>
             <div>
-              <p className="font-bold">Verified System Names:</p>
-              <ul>
-                {formState.ideal_system_name.split(", ").map((name, index) => (
-                  <li key={index}>{name}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="font-bold">Verified System URLs:</p>
-              <ul>
-                {formState.ideal_system_url.split(", ").map((url, index) => (
-                  <li key={index}>{url}</li>
-                ))}
-              </ul>
+              <p className="font-bold">Verified System Names and URLs:</p>
+              {formState.ideal_systems.map((system, index) => (
+                <div key={index} className="flex justify-between w-full mt-2">
+                  <div className="w-1/2">
+                    <p>{system.name}</p>
+                  </div>
+                  <div className="w-1/2">
+                    <p>{system.url}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         )}

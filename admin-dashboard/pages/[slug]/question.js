@@ -265,11 +265,11 @@ function Question() {
                       placeholder="System URL"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-4">
                     {/* Add system row button */}
                     <button
                       type="button"
-                      className="bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center p-1"
+                      className="bg-light-green rounded-md p-1 mr-2"
                       onClick={addIdealSystemRow}
                     >
                       <IoMdAdd className="text-black" />
@@ -279,7 +279,7 @@ function Question() {
                     {formState.ideal_systems.length > 1 && (
                       <button
                         type="button"
-                        className="bg-red-500 hover:bg-red-600 rounded-full w-8 h-8 flex justify-center items-center p-1"
+                        className="bg-red-500 rounded-md p-1"
                         onClick={() => removeIdealSystemRow(index)}
                       >
                         <IoMdRemove className="text-white" />

@@ -140,7 +140,7 @@ def process_response(res):
 
     return format_dict
 
-def openAI_response(question, response, ideal, ideal_system_name, ideal_system_url, system_name, system_url):
+def openAI_response(question, response, ideal, ideal_system_name, ideal_system_url, system_name, system_url, prompt_text=None):
 
     # Define model
     llm = ChatOpenAI(
@@ -195,25 +195,31 @@ def openAI_response(question, response, ideal, ideal_system_name, ideal_system_u
     print(feedback)
 
    # Fetch the prompt from the database
-    db = SessionFactory()
-    try:
-        db_prompt = db.query(PromptModel).first()
-        if db_prompt and db_prompt.prompt_text.strip():
-            prompt_text = db_prompt.prompt_text
-        else:
-            prompt_text = None  # Use default prompt if none is set or prompt is empty
-    except Exception as e:
-        db.rollback()
-        print(f"Error fetching prompt from database: {e}")
-        prompt_text = None  # Fallback to default prompt
-    finally:
-        db.close()  # Ensure the session is closed
-
-    # Use the dynamic prompt if available; else use the default prompt
     if prompt_text:
+        # If prompt_text is provided, use it
         prompt_template = PromptTemplate.from_template(prompt_text)
     else:
-        # Use the hardcoded default prompt
+        # Step 2: Fetch the prompt from the database
+        db = SessionFactory()
+        try:
+            db_prompt = db.query(PromptModel).first()
+            if db_prompt and db_prompt.prompt_text.strip():
+                prompt_text = db_prompt.prompt_text
+                print(f"Using dynamic prompt from database: {prompt_text}")
+                prompt_template = PromptTemplate.from_template(prompt_text)
+            else:
+                print("No prompt found in the database, falling back to default prompt.")
+                prompt_template = None
+        except Exception as e:
+            db.rollback()
+            print(f"Error fetching prompt from database: {e}")
+            prompt_template = None  # Fallback to default prompt
+        finally:
+            db.close()  # Ensure the session is closed
+
+    # Step 3: Fallback to default prompt if no prompt is found in the database
+    if not prompt_template:
+        print("Using the hardcoded default prompt.")
         prompt_template = PromptTemplate.from_template(
             """
             I will give you a question, a customer service trainee's response to that question, and the ideal response to that question.

@@ -24,7 +24,7 @@ function MyTeam() {
   const [schemeFilter, setSchemeFilter] = useState("All");
   const [search, setSearch] = useState("");
   const router = useRouter();
-  const accessRights = ["Trainee", "Admin"];
+  const accessRights = ["Trainee", "Admin", "Trainer"];
 
   // Load team members without scheme mastery first
   useEffect(() => {

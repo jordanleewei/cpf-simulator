@@ -20,6 +20,8 @@ function UpdatePage() {
   const [lastUpdatedBy, setLastUpdatedBy] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState("");
   const [downloadMessage, setDownloadMessage] = useState("");
+  const [compareResult, setCompareResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // State variables for vectorstore management
   const [csvFile, setCsvFile] = useState(null);
@@ -129,6 +131,7 @@ function UpdatePage() {
         setOriginalPromptText(promptText);
         setPromptType("dynamic");
         setEditPromptState(false);
+        setCompareResult(null);
 
         // Fetch updated prompt data to show the latest "updated by" and "updated at" fields
         const updatedPromptResponse = await fetch(`${API_URL}/prompt/current`, {
@@ -252,6 +255,31 @@ function UpdatePage() {
   const handleCancelPrompt = () => {
     setPromptText(originalPromptText);
     setEditPromptState(false);
+    setCompareResult(null);
+  };
+
+  const handleComparePrompt = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/attempt/compare-latest-feedback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt_text: promptText }),  // Ensure key is 'prompt_text'
+      });
+  
+      if (res.ok) {
+        const result = await res.json();
+        setCompareResult(result);  // Store the comparison result
+      } else {
+        console.error("Failed to compare prompts:", res.status);
+      }
+    } catch (error) {
+      console.error("Error comparing prompts:", error);
+    } finally {
+      setLoading(false); 
+    }
   };
 
   // Vectorstore management handlers
@@ -459,6 +487,12 @@ function UpdatePage() {
                 Save
               </button>
               <button
+                className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
+                onClick={handleComparePrompt} 
+              >
+                Compare Before Save
+              </button>
+              <button
                 className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
                 onClick={handleCancelPrompt}
               >
@@ -482,6 +516,72 @@ function UpdatePage() {
             </div>
           )}
         </div>
+
+        {/* Show loading spinner */}
+        {loading && (
+          <div className="flex justify-center items-center">
+            <svg className="animate-spin h-5 w-5 text-dark-green" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span className="ml-2">Comparing...</span>
+          </div>
+        )}
+
+        {/* Show comparison result */}
+        {!loading && compareResult && (
+          <div className="bg-gray-100 p-4 rounded-md mb-4">
+            <h3 className="text-lg font-bold">Comparison Result</h3>
+
+            <div className="mt-4">
+              <p className="mb-2"><strong>Question and Answer:</strong></p>
+              {compareResult?.old_feedback ? (
+                <>
+                  <p className="mb-2"><span className="underline">Scheme:</span> {compareResult.old_feedback.question.scheme_name}</p>
+                  <p className="mb-2"><span className="underline">Question Title:</span> {compareResult.old_feedback.question.title}</p>
+                  <p className="mb-2"><span className="underline">Question Details:</span> {compareResult.old_feedback.question.question_details}</p>
+                  <p className="mb-2"><span className="underline">Answer:</span> {compareResult.old_feedback.answer}</p>
+                  <p className="mb-2"><span className="underline">System Name:</span> {compareResult.old_feedback.system_name}</p>
+                  <p className="mb-2"><span className="underline">System URL:</span> {compareResult.old_feedback.system_url}</p>
+                </>
+              ) : (
+                <p>No old feedback available.</p>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <p className="mb-2"><strong>Old Feedback:</strong></p>
+              {compareResult?.old_feedback ? (
+                <>
+                  <p className="mb-2"><span className="underline">Accuracy Score:</span> {compareResult.old_feedback.accuracy_score}</p>
+                  <p className="mb-2"><span className="underline">Comprehension Score:</span> {compareResult.old_feedback.precision_score}</p>
+                  <p className="mb-2"><span className="underline">Tone Score:</span> {compareResult.old_feedback.tone_score}</p>
+                  <p className="mb-2"><span className="underline">Accuracy Feedback:</span> {compareResult.old_feedback.accuracy_feedback}</p>
+                  <p className="mb-2"><span className="underline">Comprehension Feedback:</span> {compareResult.old_feedback.precision_feedback}</p>
+                  <p className="mb-2"><span className="underline">Tone Feedback:</span> {compareResult.old_feedback.tone_feedback}</p>
+                </>
+              ) : (
+                <p>No old feedback available.</p>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <p className="mb-2"><strong>New Feedback:</strong></p>
+              {compareResult?.new_feedback ? (
+                <>
+                  <p className="mb-2"><span className="underline">Accuracy Score:</span> {compareResult.new_feedback.accuracy_score}</p>
+                  <p className="mb-2"><span className="underline">Comprehension Score:</span> {compareResult.new_feedback.precision_score}</p>
+                  <p className="mb-2"><span className="underline">Tone Score:</span> {compareResult.new_feedback.tone_score}</p>
+                  <p className="mb-2"><span className="underline">Accuracy Feedback:</span> {compareResult.new_feedback.accuracy_feedback}</p>
+                  <p className="mb-2"><span className="underline">Comprehension Feedback:</span> {compareResult.new_feedback.precision_feedback}</p>
+                  <p className="mb-2"><span className="underline">Tone Feedback:</span> {compareResult.new_feedback.tone_feedback}</p>
+                </>
+              ) : (
+                <p>No new feedback available.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="w-full h-max-content flex justify-end items-center font-bold">
             <button type="button" className="button" onClick={handleDownloadExcel}>

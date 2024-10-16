@@ -8,11 +8,13 @@ import FirstPageRoundedIcon from "@mui/icons-material/FirstPageRounded";
 import LastPageRoundedIcon from "@mui/icons-material/LastPageRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import SearchBar from "./SearchBar";
 import { useRouter } from "next/router";
 
 export default function TableCustomized({ rows }) {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(6);
+  const [filterScheme, setFilterScheme] = React.useState("");
 
   const router = useRouter();
 
@@ -46,8 +48,16 @@ export default function TableCustomized({ rows }) {
     );
   }
 
+  // Filter rows based on scheme name
+  const filteredRows = rows.filter((row) =>
+    row.scheme_name.toLowerCase().includes(filterScheme.toLowerCase())
+  );
+
   return (
     <Root sx={{ maxWidth: "100%", width: "100%" }}>
+      {/* SearchBar component */}
+      <SearchBar setSearch={setFilterScheme} /> 
+
       <table aria-label="custom pagination table">
         <thead>
           <tr>
@@ -60,14 +70,14 @@ export default function TableCustomized({ rows }) {
         </thead>
         <tbody>
           {(rowsPerPage > 0
-            ? rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-            : rows
+            ? filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+            : filteredRows
           ).map((row, idx) => (
             <tr key={idx}>
               <td>{row.question_title}</td>
               <td>{row.scheme_name}</td>
               <td align="right">{row.date}</td>
-              <td align="right">{row.attemptNumber}</td> 
+              <td align="right">{row.attemptNumber}</td>
               <td
                 align="right"
                 className="hover:underline hover:underline-offset-2 hover:cursor-pointer"
@@ -89,7 +99,7 @@ export default function TableCustomized({ rows }) {
             <CustomTablePagination
               rowsPerPageOptions={[10]}
               colSpan={4} // Updated colSpan to 4 after removing the Improvement column
-              count={rows.length}
+              count={filteredRows.length} 
               rowsPerPage={rowsPerPage}
               page={page}
               slotProps={{

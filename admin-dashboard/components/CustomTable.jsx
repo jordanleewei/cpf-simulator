@@ -9,10 +9,12 @@ import LastPageRoundedIcon from "@mui/icons-material/LastPageRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { useRouter } from "next/navigation";
+import ProfileSearchBar from "./ProfileSearchBar";
 
 export default function TableCustomized({ rows, user_id }) {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(6);
+  const [filterScheme, setFilterScheme] = React.useState("");
 
   const router = useRouter();
 
@@ -62,8 +64,16 @@ export default function TableCustomized({ rows, user_id }) {
     );
   }
 
+  // Filter rows based on scheme name
+  const filteredRows = rows.filter((row) =>
+    row.scheme_name.toLowerCase().includes(filterScheme.toLowerCase())
+  );
+
   return (
     <Root sx={{ maxWidth: "100%", width: "100%" }}>
+      {/* SearchBar component */}
+      <ProfileSearchBar setSearch={setFilterScheme} /> 
+
       <table aria-label="custom pagination table">
         <thead>
           <tr>
@@ -78,8 +88,8 @@ export default function TableCustomized({ rows, user_id }) {
         </thead>
         <tbody>
           {(rowsPerPage > 0
-            ? rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-            : rows
+            ? filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+            : filteredRows
           ).map((row, idx) => (
             <tr key={idx}>
               <td>{row.question_title}</td>
@@ -121,7 +131,7 @@ export default function TableCustomized({ rows, user_id }) {
             <CustomTablePagination
               rowsPerPageOptions={[10]}
               colSpan={5} // Updated colSpan to 5 to include the new column
-              count={rows.length}
+              count={filteredRows.length} 
               rowsPerPage={rowsPerPage}
               page={page}
               slotProps={{

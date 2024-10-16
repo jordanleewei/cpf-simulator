@@ -24,6 +24,7 @@ from schemas.manual_feedback import ManualFeedbackBase
 from schemas.ai_improvements import AIImprovementsBase
 from schemas.table import TableBase
 from schemas.system import SystemCreate, SystemUpdate, System
+from schemas.compare_prompt import ComparePromptRequest
 from config import Base, config
 from sqlalchemy import func, distinct
 from fastapi.middleware.cors import CORSMiddleware
@@ -1180,6 +1181,72 @@ async def get_user_average_scores(
             })
 
     return scheme_average_scores
+
+# Fetch the latest attempt and compare old feedback with new feedback after processing the new prompt
+@app.post("/attempt/compare-latest-feedback", status_code=status.HTTP_200_OK)
+async def compare_latest_feedback(
+    request: ComparePromptRequest,  # Use the Pydantic model to parse the request body
+    db: Session = Depends(create_session)
+):
+    logging.info("Fetching the latest attempt from the database")
+
+    # Step 1: Fetch the latest attempt across the entire database
+    latest_attempt = db.query(AttemptModel).order_by(AttemptModel.date.desc()).first()
+
+    if not latest_attempt:
+        raise HTTPException(status_code=404, detail="No attempts found")
+
+    logging.info(f"Found latest attempt: {latest_attempt.attempt_id}")
+
+    # Step 2: Fetch the corresponding question for context
+    question = db.query(QuestionModel).filter(
+        QuestionModel.question_id == latest_attempt.question_id
+    ).first()
+
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    logging.info(f"Found question: {question.title}")
+
+    # Step 3: Use the same answer and re-run it with the new prompt to get new feedback
+    new_response = openAI_response(
+        question=question.question_details,
+        response=latest_attempt.answer,  # The same answer from the latest attempt
+        ideal=question.ideal,
+        ideal_system_name=question.ideal_system_name,
+        ideal_system_url=question.ideal_system_url,
+        system_name=latest_attempt.system_name,
+        system_url=latest_attempt.system_url,
+        prompt_text=request.prompt_text  # The new prompt provided for comparison
+    )
+
+    # Step 4: Process the new response (to extract scores and feedback)
+    new_feedback = process_response(new_response)
+
+    logging.info("New feedback generated using the new prompt")
+
+    # Step 5: Prepare the old feedback stored in the database
+    old_feedback = {
+        "question": question,
+        "answer": latest_attempt.answer,
+        "system_name": latest_attempt.system_name,
+        "system_url": latest_attempt.system_url,
+        "precision_score": latest_attempt.precision_score,
+        "accuracy_score": latest_attempt.accuracy_score,
+        "tone_score": latest_attempt.tone_score,
+        "accuracy_feedback": latest_attempt.accuracy_feedback,
+        "precision_feedback": latest_attempt.precision_feedback,
+        "tone_feedback": latest_attempt.tone_feedback,
+        "general_feedback": latest_attempt.feedback
+    }
+
+    logging.info("Old feedback prepared from the database")
+
+    # Step 6: Return both old and new feedback for comparison
+    return {
+        "old_feedback": old_feedback,
+        "new_feedback": new_feedback
+    }
 
 ## MANUAL FEEDBACK ROUTES
 @app.post("/manual-feedback", status_code=status.HTTP_201_CREATED)

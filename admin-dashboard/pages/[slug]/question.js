@@ -257,7 +257,7 @@ function Question() {
                       className="w-full"
                     />
                   </div>
-                  <div className="w-1/2">
+                  <div className="w-1/2 ml-4">
                     <textarea
                       value={system.url}
                       readOnly

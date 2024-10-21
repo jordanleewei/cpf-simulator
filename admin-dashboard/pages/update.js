@@ -5,6 +5,7 @@ import isAuth from "../components/isAuth.jsx";
 import { Input, Button } from "@nextui-org/react";
 import { FaRegTrashCan } from "react-icons/fa6";
 import SaveModal from "../components/SaveModal";
+import RevertModal from "../components/RevertModal";
 import UploadModal from "../components/UploadModal";
 import * as XLSX from 'xlsx';
 import Download from "@mui/icons-material/SimCardDownloadOutlined";
@@ -25,6 +26,7 @@ function UpdatePage() {
   const [compareResult, setCompareResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showRevertModal, setShowRevertModal] = useState(false);
 
   // State variables for vectorstore management
   const [csvFile, setCsvFile] = useState(null);
@@ -513,7 +515,7 @@ function UpdatePage() {
               </button>
               <button
                 className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
-                onClick={handleRevertToDefault}
+                onClick={() => setShowRevertModal(true)}
               >
                 Revert to Default Prompt
               </button>
@@ -526,6 +528,14 @@ function UpdatePage() {
           <SaveModal
             setShowModal={setShowSaveModal}
             handleSave={handleUpdatePrompt}  // Save action when confirmed
+          />
+        )}
+
+        {/* RevertModal */}
+        {showRevertModal && (
+          <RevertModal
+            setRevertModal={setShowRevertModal}
+            handleRevert={handleRevertToDefault}  
           />
         )}
 
@@ -669,11 +679,20 @@ function UpdatePage() {
           </button>
           <button
             className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md w-fit"
-            onClick={handleRevertVectorstore}
+            onClick={() => setShowRevertModal(true)}
             disabled={isUploading}
           >
             Revert to Default Vectorstore
           </button>
+
+          {/* RevertModal */}
+          {showRevertModal && (
+            <RevertModal
+              setRevertModal={setShowRevertModal}
+              handleRevert={handleRevertVectorstore}  
+            />
+          )}
+
           {isUploading && (
             <div className="flex items-center gap-2 mt-4">
               <svg

@@ -11,6 +11,16 @@ services:
     ports:
       - "3001:3001"
 
+  trainer-dashboard:
+    environment:
+      NEXT_PUBLIC_BACKEND_API_URL: http://localhost:8000
+    volumes:
+      - ./trainer-dashboard:/trainer-dashboard  # Mount the project directory for live reloading
+      - /trainer-dashboard/node_modules  # Prevent overwriting node_modules
+    command: npm run dev  # Use the dev command to enable live reloading
+    ports:
+      - "3003:3003"
+
   final-csa-dashboard:
     environment:
       NEXT_PUBLIC_BACKEND_API_URL: http://localhost:8000

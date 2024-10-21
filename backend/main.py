@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com", "http://localhost:3001", "http://localhost:3000"]
+origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com", "http://localhost:3001", "http://localhost:3000", "http://localhost:3003"]
 
 app.add_middleware(
     CORSMiddleware,

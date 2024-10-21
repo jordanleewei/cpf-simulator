@@ -27,7 +27,7 @@ function AddProfile() {
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [selectedAccessIndex, setSelectedAccessIndex] = useState(0);
-  const accessRights = [, "Admin", "Trainer", "Trainee"];
+  const accessRights = ["Trainee"];
 
   // Function to generate a random password
   const generatePassword = () => {

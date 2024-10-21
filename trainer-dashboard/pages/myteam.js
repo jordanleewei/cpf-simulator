@@ -47,16 +47,13 @@ function MyTeam() {
         if (res.ok) {
           let teamMembers = await res.json();
 
-          // Sort team members immediately after fetching
-          teamMembers = teamMembers.sort((a, b) => {
-            if (a.access_rights === "Admin" && b.access_rights !== "Admin") {
-              return -1;
-            } else if (a.access_rights !== "Admin" && b.access_rights === "Admin") {
-              return 1;
-            } else {
-              return a.name.localeCompare(b.name);
-            }
-          });
+          // Filter and keep only "Trainee" users
+          teamMembers = teamMembers.filter(
+            (member) => member.access_rights === "Trainee"
+          );
+
+          // Sort team members immediately after filtering
+          teamMembers = teamMembers.sort((a, b) => a.name.localeCompare(b.name));
 
           setAllTeamMembers(teamMembers);
           setOriginalTeamMembers(teamMembers);
@@ -357,33 +354,15 @@ function MyTeam() {
             {displayMembers.map((i, idx) => (
               <tr className="hover:bg-light-gray hover:cursor-pointer" key={idx}>
                 <td className="text-start py-2 px-3 border">
-                  {editState ? (
-                    <input
-                      type="text"
-                      value={i.name}
-                      onChange={(e) => handleChange(idx, "name", e.target.value)}
-                      className="border border-gray-300 p-1"
-                    />
-                  ) : (
-                    <span
-                      className="hover:underline hover:underline-offset-2"
-                      onClick={() => handleNav(i.uuid)}
-                    >
-                      {i.name}
-                    </span>
-                  )}
+                  <span
+                    className="hover:underline hover:underline-offset-2"
+                    onClick={() => handleNav(i.uuid)}
+                  >
+                    {i.name}
+                  </span>
                 </td>
                 <td className="text-start py-2 px-3 border">
-                  {editState ? (
-                    <input
-                      type="email"
-                      value={i.email}
-                      onChange={(e) => handleChange(idx, "email", e.target.value)}
-                      className="border border-gray-300 p-1"
-                    />
-                  ) : (
-                    i.email
-                  )}
+                  {i.email}
                 </td>
                 <td className="text-start py-2 px-3 border">
                   {editState && resetPasswordIndex === idx ? (
@@ -427,32 +406,7 @@ function MyTeam() {
                 </td>
                 <td className="text-start py-2 px-3 border">
                   {editState ? (
-                    <div className="relative inline-block text-left">
-                      <Dropdown>
-                        <DropdownTrigger placement="bottom-end">
-                          <Button className="flex justify-between items-center w-full border border-gray-300 p-1">
-                            {i.access_rights} <AiFillCaretDown />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                          disallowEmptySelection
-                          aria-label="Select access right"
-                          selectionMode="single"
-                          selectedKeys={new Set([i.access_rights])}
-                          onSelectionChange={(keys) => handleChange(idx, "access_rights", keys.anchorKey)}
-                          className="w-full block bg-light-green"
-                        >
-                          {accessRights.map((right) => (
-                            <DropdownItem
-                              className="hover:bg-lighter-green"
-                              key={right}
-                            >
-                              {right}
-                            </DropdownItem>
-                          ))}
-                        </DropdownMenu>
-                      </Dropdown>
-                    </div>
+                    <span>{i.access_rights}</span> // Show access rights as plain text in edit mode
                   ) : (
                     i.access_rights
                   )}

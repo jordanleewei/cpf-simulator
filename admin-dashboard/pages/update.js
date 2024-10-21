@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import isAuth from "../components/isAuth.jsx"; 
 import { Input, Button } from "@nextui-org/react";
 import { FaRegTrashCan } from "react-icons/fa6";
+import SaveModal from "../components/SaveModal";
+import UploadModal from "../components/UploadModal";
 import * as XLSX from 'xlsx';
 import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
@@ -22,11 +24,13 @@ function UpdatePage() {
   const [downloadMessage, setDownloadMessage] = useState("");
   const [compareResult, setCompareResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   // State variables for vectorstore management
   const [csvFile, setCsvFile] = useState(null);
   const [csvUploadMessage, setCsvUploadMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // State variables for system management
   const [systems, setSystems] = useState([]);
@@ -482,7 +486,7 @@ function UpdatePage() {
             <div className="flex flex-row gap-2">
               <button
                 className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
-                onClick={handleUpdatePrompt}
+                onClick={() => setShowSaveModal(true)}  // Show modal instead of saving
               >
                 Save
               </button>
@@ -516,6 +520,14 @@ function UpdatePage() {
             </div>
           )}
         </div>
+
+        {/* SaveModal */}
+        {showSaveModal && (
+          <SaveModal
+            setShowModal={setShowSaveModal}
+            handleSave={handleUpdatePrompt}  // Save action when confirmed
+          />
+        )}
 
         {/* Show loading spinner */}
         {loading && (
@@ -650,7 +662,7 @@ function UpdatePage() {
           />
           <button
             className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md w-fit"
-            onClick={handleUploadCsv}
+            onClick={() => setShowUploadModal(true)} 
             disabled={!csvFile || isUploading}
           >
             Upload CSV
@@ -689,6 +701,14 @@ function UpdatePage() {
           )}
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <UploadModal
+          setUploadModal={setShowUploadModal}
+          handleUpload={handleUploadCsv}  // Upload action when confirmed
+        />
+      )}
       
       <div className="bg-white min-w-full rounded-md p-6">
         <p className="font-bold text-xl mb-4">System Name Management</p>

@@ -135,8 +135,7 @@ function MyTeam() {
       filteredMembers = filteredMembers.filter(
         (member) =>
           member.name.toLowerCase().includes(search.toLowerCase()) ||
-          member.email.toLowerCase().includes(search.toLowerCase()) ||
-          member.dept.toLowerCase().includes(search.toLowerCase())
+          member.email.toLowerCase().includes(search.toLowerCase())
       );
     }
 

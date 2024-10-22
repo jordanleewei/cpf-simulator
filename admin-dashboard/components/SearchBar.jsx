@@ -4,9 +4,9 @@ export default function SearchBar({ setSearch }) {
   return (
     <div className="relative">
       <input
-        className="bg-light-gray pl-7 pr-14 rounded-md py-1 w-96"
+        className="bg-light-gray pl-7 pr-14 rounded-md py-1 w-80"
         type="text"
-        placeholder="Search by Name, Email or Department"
+        placeholder="Search by Name or Email"
         onChange={(e) => setSearch(e.target.value)}
       />
       <IoMdSearch

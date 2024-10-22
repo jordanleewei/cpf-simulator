@@ -23,100 +23,77 @@ function MyTeam() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [schemeFilter, setSchemeFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [currentUser, setCurrentUser] = useState(null); // To store current user details
   const router = useRouter();
-  const accessRights = ["Admin", "Trainer", "Trainee"]; 
 
-  // Load team members without scheme mastery first
+  // Load current user and team members from the same department
   useEffect(() => {
     const fetchData = async () => {
       const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-      
-      // Retrieve the token from localStorage
       const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
       const token = loggedUser ? loggedUser.access_token : null;
 
       try {
-        // Fetch team members
-        const res = await fetch(`${API_URL}/user`, {
+        // Fetch current user details using the /user/me route
+        const currentUserRes = await fetch(`${API_URL}/user/me`, {
           method: "GET",
           headers: {
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        if (res.ok) {
-          let teamMembers = await res.json();
+        if (currentUserRes.ok) {
+          const userDetails = await currentUserRes.json();
+          setCurrentUser(userDetails);
 
-          // Filter and keep only "Trainee" users
-          teamMembers = teamMembers.filter(
-            (member) => member.access_rights === "Trainee"
-          );
+          // Fetch team members
+          const res = await fetch(`${API_URL}/user`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-          // Sort team members immediately after filtering
-          teamMembers = teamMembers.sort((a, b) => a.name.localeCompare(b.name));
+          if (res.ok) {
+            let teamMembers = await res.json();
 
-          setAllTeamMembers(teamMembers);
-          setOriginalTeamMembers(teamMembers);
-          setDisplayMembers(teamMembers);
+            // Filter team members to only include "Trainee" users from the same department
+            teamMembers = teamMembers.filter(
+              (member) =>
+                member.access_rights === "Trainee" && member.dept === userDetails.dept
+            );
 
-          // Lazy load scheme mastery data after the team members are displayed
-          teamMembers.forEach(member => loadSchemeMasteryForMember(member, token));
+            setAllTeamMembers(teamMembers);
+            setOriginalTeamMembers(teamMembers);
+            setDisplayMembers(teamMembers);
+
+            // Fetch schemes
+            const res2 = await fetch(`${API_URL}/distinct/scheme`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (res2.ok) {
+              const schemes = await res2.json();
+              setAllSchemes(schemes);
+            }
+          } else {
+            console.error("Failed to fetch team members.");
+          }
         } else {
-          console.log("Authorization failed:", res.status);
-          router.push('/');
-          return;
-        }
-
-        // Fetch schemes
-        const res2 = await fetch(`${API_URL}/distinct/scheme`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-
-        if (res2.ok) {
-          const schemes = await res2.json();
-          const formattedSchemes = Array.isArray(schemes)
-            ? schemes.map(
-                (scheme) =>
-                  scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
-              )
-            : [];
-          setAllSchemes(formattedSchemes);
+          console.error("Failed to fetch current user details.");
+          router.push("/");
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+        router.push("/");
       }
     };
 
     fetchData();
   }, [router]);
-
-  // Function to load scheme mastery for each member lazily
-  const loadSchemeMasteryForMember = async (member, token) => {
-    const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-
-    try {
-      const res = await fetch(`${API_URL}/user/${member.uuid}/schemes`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (res.ok) {
-        const schemeMasteryRes = await res.json();
-        setAllTeamMembers((prev) => 
-          prev.map((tm) => tm.uuid === member.uuid 
-            ? { ...tm, schemeMastery: schemeMasteryRes } 
-            : tm)
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching scheme mastery:", error);
-    }
-  };
 
   useEffect(() => {
     let filteredMembers = allTeamMembers;
@@ -131,7 +108,8 @@ function MyTeam() {
       filteredMembers = filteredMembers.filter(
         (member) =>
           member.name.toLowerCase().includes(search.toLowerCase()) ||
-          member.email.toLowerCase().includes(search.toLowerCase())
+          member.email.toLowerCase().includes(search.toLowerCase()) ||
+          member.dept.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -345,6 +323,7 @@ function MyTeam() {
               <th className="text-start py-2 px-3 border">Email</th>
               <th className="text-start py-2 px-3 border">Password</th>
               <th className="text-start py-2 px-3 border w-1/6">Access</th>
+              <th className="text-start py-2 px-3 border">Department</th>
               <th className="text-start py-2 px-3 border w-1/3">Schemes</th>
               <th className="text-start py-2 px-3 border w-1/3">Scheme Mastery</th>
               <th className="w-[0px] p-0" />
@@ -406,11 +385,12 @@ function MyTeam() {
                 </td>
                 <td className="text-start py-2 px-3 border">
                   {editState ? (
-                    <span>{i.access_rights}</span> // Show access rights as plain text in edit mode
+                    <span>{i.access_rights}</span>
                   ) : (
                     i.access_rights
                   )}
                 </td>
+                <td className="text-start py-2 px-3 border">{i.dept}</td>
                 <td className="text-start py-2 px-3 border">
                   <SchemeTags
                     schemes={i.schemes}
@@ -423,7 +403,7 @@ function MyTeam() {
                     }
                   />
                 </td>
-                <td className="text-start py-2 px-3 border"> {/* Scheme Mastery Column */}
+                <td className="text-start py-2 px-3 border">
                   <div className="rounded-lg p-5 flex flex-col justify-center items-center gap-5">
                     {Array.isArray(i.schemeMastery) && i.schemeMastery.length > 0 ? (
                       i.schemeMastery.map((cat, idx) => (

@@ -1,18 +1,13 @@
-// Import useState and useRouter from React
-import { useState } from "react";
+// Import useState, useEffect, and useRouter from React
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 // Import components and icons
 import {
   Input,
-  Dropdown,
-  DropdownMenu,
-  DropdownTrigger,
   Button,
-  ButtonGroup,
-  DropdownItem,
 } from "@nextui-org/react";
-import { AiFillCaretDown, AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { IoIosArrowBack } from "react-icons/io";
 import { BiRefresh } from "react-icons/bi";
 import isAuth from "../components/isAuth";
@@ -25,9 +20,37 @@ function AddProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dept, setDept] = useState(""); // This will be populated with the current user's department
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [selectedAccessIndex, setSelectedAccessIndex] = useState(0);
-  const accessRights = ["Trainee"];
+  const accessRight = "Trainee"; // Static value for Access Rights
+
+  // Fetch the current user's details and set the department
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+      const token = loggedUser ? loggedUser.access_token : null;
+
+      try {
+        const res = await fetch(`${API_URL}/user/me`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const currentUser = await res.json();
+          setDept(currentUser.dept); // Set the department to the current user's department
+        } else {
+          console.error("Failed to fetch current user details");
+        }
+      } catch (error) {
+        console.error("Error fetching current user details:", error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   // Function to generate a random password
   const generatePassword = () => {
@@ -43,7 +66,7 @@ function AddProfile() {
   };
 
   // Function to add a new user
-  async function addUser(name, email, password, access_rights) {
+  async function addUser(name, email, password, dept) {
     try {
       const response = await fetch(
         `${API_URL}/user`, {
@@ -52,7 +75,8 @@ function AddProfile() {
           name: name,
           email: email,
           password: password,
-          access_rights: access_rights,
+          access_rights: accessRight,
+          dept: dept,
         }),
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +98,7 @@ function AddProfile() {
 
   // Function to handle saving the profile
   function handleSaveProfile() {
-    addUser(name, email, password, accessRights[selectedAccessIndex])
+    addUser(name, email, password, dept)
       .then(() => {
         router.push("/myteam");
       })
@@ -174,48 +198,31 @@ function AddProfile() {
           </div>
         </div>
 
-        {/* Access rights dropdown */}
-        <ButtonGroup
-          variant="flat"
-          className="flex flex-row items-center"
-        >
-          <span className="flex w-1/4 pr-2">
-            <p className="text-red-500">*</p>Access:{" "}
+        {/* Access Rights display */}
+        <div className="flex flex-row justify-center items-center">
+          <span className="flex w-1/4">
+            <p className="text-red-500">*</p>Access Rights:
           </span>
-          <div className="pr-1"> 
-          <div className="flex border border-sage-green p-1 w-48 justify-between">
-            <span className="flex w-1/4">
-              {accessRights[selectedAccessIndex]}
-            </span>
-            <Dropdown>
-              <DropdownTrigger placement="bottom-end">
-                <Button isIconOnly className="px-2">
-                  <AiFillCaretDown />
-                </Button>
-              </DropdownTrigger>
-
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label={accessRights[selectedAccessIndex]}
-                selectedKey={[selectedAccessIndex]}
-                selectionMode="single"
-                className="place-items-center block bg-light-green"
-              >
-                {accessRights.map((access, index) => (
-                  <DropdownItem
-                    className="p-1 hover:bg-white/50 outline-none rounded w-full"
-                    key={index}
-                    onAction={() => setSelectedAccessIndex(index)}
-                  >
-                    {access}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-          </div>
-        </ButtonGroup>
+          <Input
+            value={accessRight} // Display the access right
+            isDisabled // Disable the input to prevent editing
+            className="flex border border-sage-green outline-2 py-1 w-48"
+          />
         </div>
+
+        {/* Dept input */}
+        <div className="flex flex-row justify-center items-center">
+          <span className="flex w-28">
+            <p className="text-red-500">*</p>Department:
+          </span>
+          <Input
+            isRequired
+            value={dept} // Use the current user's department
+            isDisabled // Disable the department input to prevent changes
+            className="flex border border-sage-green outline-2 py-1 w-48"
+          />
+        </div>
+
         {/* Buttons for cancel and save */}
         <div className="flex justify-center items-end">
           <Button
@@ -234,6 +241,7 @@ function AddProfile() {
       </div>
       </div>
     </div>
+  </div>
   );
 }
 

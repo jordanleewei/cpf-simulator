@@ -137,7 +137,8 @@ async def login_for_access_token(db: Session = Depends(create_session), form_dat
         "uuid": user.uuid,
         "email": user.email,
         "name": user.name,
-        "access_rights": user.access_rights  # Include access_rights directly in the response
+        "access_rights": user.access_rights,  # Include access_rights directly in the response
+        "dept": user.dept
     }
 
 
@@ -249,6 +250,32 @@ add_default_user()
 
 ### USER ROUTES ###
 
+@app.get("/user/me", response_model=UserResponseSchema, status_code=status.HTTP_200_OK)
+async def get_current_user_details(
+    current_user: UserModel = Depends(get_current_user), 
+    db: Session = Depends(create_session)
+):
+    """
+    Fetch the current authenticated user's details.
+    """
+    # Get the current user's details (already fetched through get_current_user)
+    user = db.query(UserModel).filter(UserModel.uuid == current_user.uuid).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Prepare response
+    user_response = UserResponseSchema(
+        uuid=user.uuid,
+        email=user.email,
+        name=user.name,
+        access_rights=user.access_rights,
+        dept=user.dept,
+        schemes=[scheme.scheme_name for scheme in user.scheme]  # Assuming a user has related schemes
+    )
+
+    return user_response
+
 @app.get("/user", status_code=status.HTTP_201_CREATED)
 async def get_all_users(
     db: Session = Depends(create_session),
@@ -268,6 +295,7 @@ async def get_all_users(
             email=user.email,
             name=user.name,
             access_rights=user.access_rights,
+            dept = user.dept,
             schemes=schemes
         )
         user_responses.append(user_response)
@@ -288,7 +316,8 @@ async def read_user(
         "uuid": db_user.uuid,
         "email": db_user.email,
         "name": db_user.name,
-        "access_rights": db_user.access_rights
+        "access_rights": db_user.access_rights,
+        "dept": db_user.dept
     }
     return user_data
 
@@ -306,6 +335,7 @@ async def update_user(
     db_user.email = user.email
     db_user.name = user.name
     db_user.access_rights = user.access_rights
+    db_user.dept=user.dept
     
     if user.password:  
         db_user.hashed_password = pwd_context.hash(user.password)
@@ -346,7 +376,7 @@ async def create_user(
     current_user: UserModel = Depends(get_current_user)  # Ensure the current user is authenticated
 ):
     # Check if the current user is an admin
-    if current_user.access_rights.lower() != "admin":
+    if current_user.access_rights.lower() != "admin" and current_user.access_rights.lower() != "trainer":
         print(current_user.access_rights)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
 
@@ -359,7 +389,8 @@ async def create_user(
         email=user.email,
         hashed_password=hashed_password,
         name=user.name,
-        access_rights=user.access_rights
+        access_rights=user.access_rights,
+        dept=user.dept
     )
     db.add(db_user)
     db.commit()

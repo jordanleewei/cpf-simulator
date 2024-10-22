@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Column
+from sqlalchemy import Integer, String, Column, text
 from typing import List
 from sqlalchemy.orm import Mapped, relationship
 from config import Base
@@ -17,6 +17,7 @@ class UserModel(Base):
     name: Mapped[str] = Column(String(255), nullable=False)
     access_rights: Mapped[str] = Column(String(255), nullable=False)
     hashed_password: Mapped[str] = Column(String(255), nullable=False)
+    dept: Mapped[str] = Column(String(255), nullable=False)
     
     # relationships
     scheme: Mapped[list[SchemeModel]] = relationship(SchemeModel, secondary=user_scheme_association, cascade="all, delete", back_populates="users")

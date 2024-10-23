@@ -6,6 +6,7 @@ SERVICES=(
     "cpf_simulator_backend_v1"
     "service-admin"
     "service-csa"
+    "service-trainer"
 )
 
 # Function to update the ECS service with the latest task definition

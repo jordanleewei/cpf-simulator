@@ -1,0 +1,14 @@
+services:
+  admin-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cpf_simulator_trainer_frontend
+    ports:
+      - "3003:3003"
+    environment:
+      NEXT_PUBLIC_BACKEND_API_URL: https://backendapi.ccutrainingsimulator.com
+    volumes:
+      - ./trainer-dashboard:/trainer-dashboard
+      - /trainer-dashboard/.next
+    restart: unless-stopped

@@ -52,6 +52,16 @@ export default function Header({ user, setUser }) {
             >
               Manage Schemes
             </Link>
+            <Link
+              href="/update"
+              className={`${
+                pathname === "/update"
+                  ? "font-bold underline underline-offset-3 decoration-white"
+                  : "font-normal no-underline"
+              }`}
+            >
+              Update Settings
+            </Link>
           </div>
           <button className="flex items-center gap-2" onClick={handleLogout}>
             Logout

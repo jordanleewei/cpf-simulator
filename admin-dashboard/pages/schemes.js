@@ -18,39 +18,39 @@ function Schemes() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    async function getSchemes() {
-      try {
-        const res = await fetch(`${API_URL}/scheme`);
+  const getSchemes = async () => {
+    try {
+      const res = await fetch(`${API_URL}/scheme`);
 
-        if (res.ok) {
-          const schemeData = await res.json();
+      if (res.ok) {
+        const schemeData = await res.json();
 
-          if (Array.isArray(schemeData)) {
-            const formattedSchemes = schemeData.map((scheme) => ({
-              ...scheme,
-              scheme_name:
-                scheme.scheme_name.charAt(0).toUpperCase() +
-                scheme.scheme_name.slice(1).toLowerCase(),
-              questions: Array.isArray(scheme.questions) ? scheme.questions : [],
-            }));
+        if (Array.isArray(schemeData)) {
+          const formattedSchemes = schemeData.map((scheme) => ({
+            ...scheme,
+            scheme_name:
+              scheme.scheme_name.charAt(0).toUpperCase() +
+              scheme.scheme_name.slice(1).toLowerCase(),
+            questions: Array.isArray(scheme.questions) ? scheme.questions : [],
+          }));
 
-            setSchemes(formattedSchemes);
-            setOriginalSchemes(formattedSchemes);
-          } else {
-            setSchemes([]);
-          }
+          setSchemes(formattedSchemes);
+          setOriginalSchemes(formattedSchemes);
         } else {
           setSchemes([]);
         }
-      } catch (e) {
-        console.log(e);
+      } else {
         setSchemes([]);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (e) {
+      console.log(e);
+      setSchemes([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
     getSchemes();
   }, [API_URL]);
 
@@ -78,7 +78,7 @@ function Schemes() {
       if (res.ok) {
         setUploadMessage("CSV uploaded successfully.");
         setCsvFile(null); // Clear the file input after upload
-        getSchemes(); // Refresh schemes data after upload
+        await getSchemes(); // Refresh schemes data after upload
       } else {
         setUploadMessage("Failed to upload CSV. Please try again.");
       }

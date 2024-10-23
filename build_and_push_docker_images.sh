@@ -13,6 +13,7 @@ services=(
     "backend:cpf_simulator_backend_connected_to_aws_rdb"
     "final-csa-dashboard:cpf_simulator_trainee_frontend"
     "admin-dashboard:cpf_simulator_frontend"
+    "trainer-dashboard:cpf_simulator_trainer_frontend"
 )
 
 # Function to build, tag, and push Docker images using docker-compose

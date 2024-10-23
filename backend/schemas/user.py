@@ -6,6 +6,7 @@ class UserBase(BaseModel):
     password: Optional[str] = None
     access_rights: str
     name: str
+    dept: str
 
 class UserInput(BaseModel):
     email: str
@@ -16,6 +17,7 @@ class UserResponseSchema(BaseModel):
     email: str
     name: str
     access_rights: str
+    dept: str
     schemes: List[str]
     class Config:
         from_attributes = True

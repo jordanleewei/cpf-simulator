@@ -58,5 +58,6 @@ update_record() {
 
 # Update the Route 53 records for all services
 update_record "service-admin" "admin-ip.ccutrainingsimulator.com"
+update_record "service-trainer" "trainer-ip.ccutrainingsimulator.com"
 update_record "service-csa" "csa-ip.ccutrainingsimulator.com"
 update_record "cpf_simulator_backend_v1" "backendapi-ip.ccutrainingsimulator.com"

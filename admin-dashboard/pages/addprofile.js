@@ -25,9 +25,10 @@ function AddProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dept, setDept] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [selectedAccessIndex, setSelectedAccessIndex] = useState(0);
-  const accessRights = ["Trainee", "Admin"];
+  const accessRights = [, "Admin", "Trainer", "Trainee"];
 
   // Function to generate a random password
   const generatePassword = () => {
@@ -43,7 +44,7 @@ function AddProfile() {
   };
 
   // Function to add a new user
-  async function addUser(name, email, password, access_rights) {
+  async function addUser(name, email, password, access_rights, dept) {
     try {
       const response = await fetch(
         `${API_URL}/user`, {
@@ -53,6 +54,7 @@ function AddProfile() {
           email: email,
           password: password,
           access_rights: access_rights,
+          dept: dept,
         }),
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +76,7 @@ function AddProfile() {
 
   // Function to handle saving the profile
   function handleSaveProfile() {
-    addUser(name, email, password, accessRights[selectedAccessIndex])
+    addUser(name, email, password, accessRights[selectedAccessIndex], dept)
       .then(() => {
         router.push("/myteam");
       })
@@ -216,6 +218,21 @@ function AddProfile() {
           </div>
         </ButtonGroup>
         </div>
+
+        {/* Dept input */}
+        <div className="flex flex-row justify-center items-center">
+          <span className="flex w-[105px]">
+            <p className="text-red-500">*</p>Department:
+          </span>
+          <Input
+            isRequired
+            placeholder="Enter your department"
+            defaultValue=""
+            onValueChange={(value) => setDept(value)}
+            className="flex border border-sage-green outline-2 py-1 w-48"
+          />
+        </div>
+
         {/* Buttons for cancel and save */}
         <div className="flex justify-center items-end">
           <Button

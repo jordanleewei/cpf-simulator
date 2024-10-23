@@ -5,6 +5,7 @@ DISTRIBUTION_IDS=(
     "EG6JTHH4ANKKH"  # Replace with your actual Distribution ID for admin.ccutrainingsimulator.com
     "EZQFXY5KSY9N5"  # Replace with your actual Distribution ID for backendapi.ccutrainingsimulator.com
     "E18NPGVQ3G7IKX"  # Replace with your actual Distribution ID for csa.ccutrainingsimulator.com
+    "E3F16K3J2EKJBS"  # Replace with your actual Distribution ID for trainer.ccutrainingsimulator.com
 )
 
 # Function to create an invalidation

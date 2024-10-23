@@ -12,6 +12,9 @@ from models.question import QuestionModel
 from models.ai_improvements import AIImprovementsModel
 from models.manual_feedback import ManualFeedbackModel
 from models.association_tables import user_scheme_association
+from models.prompt import PromptModel
+from models.system import SystemModel
+from schemas.prompt import PromptBase
 from session import create_session, engine, open_session
 from schemas.attempt import AttemptCreate, AttemptResponse, AttemptBase
 from schemas.user import UserBase, UserInput, UserResponseSchema
@@ -20,10 +23,12 @@ from schemas.question import QuestionBase
 from schemas.manual_feedback import ManualFeedbackBase
 from schemas.ai_improvements import AIImprovementsBase
 from schemas.table import TableBase
+from schemas.system import SystemCreate, SystemUpdate, System
+from schemas.compare_prompt import ComparePromptRequest
 from config import Base, config
 from sqlalchemy import func, distinct
 from fastapi.middleware.cors import CORSMiddleware
-from ML.openAI import process_response, openAI_response
+from ML.openAI import process_response, openAI_response, get_default_prompt, update_vectorstore, DYNAMIC_CSV_PATH
 from ML.ai_analysis import analyse_improvements
 import uuid
 import os
@@ -36,6 +41,7 @@ import pandas as pd
 from io import StringIO
 from models.token import Token  # Import the Token model
 from fastapi.responses import JSONResponse
+from typing import List
 
 # Import OAuth2PasswordBearer
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -46,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com", "http://localhost:3001", "http://localhost:3000"]
+origins = ["https://admin.ccutrainingsimulator.com", "https://csa.ccutrainingsimulator.com", "https://trainer.ccutrainingsimulator.com", "http://localhost:3001", "http://localhost:3000", "http://localhost:3003"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -131,7 +137,8 @@ async def login_for_access_token(db: Session = Depends(create_session), form_dat
         "uuid": user.uuid,
         "email": user.email,
         "name": user.name,
-        "access_rights": user.access_rights  # Include access_rights directly in the response
+        "access_rights": user.access_rights,  # Include access_rights directly in the response
+        "dept": user.dept
     }
 
 
@@ -243,6 +250,32 @@ add_default_user()
 
 ### USER ROUTES ###
 
+@app.get("/user/me", response_model=UserResponseSchema, status_code=status.HTTP_200_OK)
+async def get_current_user_details(
+    current_user: UserModel = Depends(get_current_user), 
+    db: Session = Depends(create_session)
+):
+    """
+    Fetch the current authenticated user's details.
+    """
+    # Get the current user's details (already fetched through get_current_user)
+    user = db.query(UserModel).filter(UserModel.uuid == current_user.uuid).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Prepare response
+    user_response = UserResponseSchema(
+        uuid=user.uuid,
+        email=user.email,
+        name=user.name,
+        access_rights=user.access_rights,
+        dept=user.dept,
+        schemes=[scheme.scheme_name for scheme in user.scheme]  # Assuming a user has related schemes
+    )
+
+    return user_response
+
 @app.get("/user", status_code=status.HTTP_201_CREATED)
 async def get_all_users(
     db: Session = Depends(create_session),
@@ -262,6 +295,7 @@ async def get_all_users(
             email=user.email,
             name=user.name,
             access_rights=user.access_rights,
+            dept = user.dept,
             schemes=schemes
         )
         user_responses.append(user_response)
@@ -282,7 +316,8 @@ async def read_user(
         "uuid": db_user.uuid,
         "email": db_user.email,
         "name": db_user.name,
-        "access_rights": db_user.access_rights
+        "access_rights": db_user.access_rights,
+        "dept": db_user.dept
     }
     return user_data
 
@@ -300,6 +335,7 @@ async def update_user(
     db_user.email = user.email
     db_user.name = user.name
     db_user.access_rights = user.access_rights
+    db_user.dept=user.dept
     
     if user.password:  
         db_user.hashed_password = pwd_context.hash(user.password)
@@ -340,7 +376,7 @@ async def create_user(
     current_user: UserModel = Depends(get_current_user)  # Ensure the current user is authenticated
 ):
     # Check if the current user is an admin
-    if current_user.access_rights.lower() != "admin":
+    if current_user.access_rights.lower() != "admin" and current_user.access_rights.lower() != "trainer":
         print(current_user.access_rights)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
 
@@ -353,7 +389,8 @@ async def create_user(
         email=user.email,
         hashed_password=hashed_password,
         name=user.name,
-        access_rights=user.access_rights
+        access_rights=user.access_rights,
+        dept=user.dept
     )
     db.add(db_user)
     db.commit()
@@ -1176,6 +1213,72 @@ async def get_user_average_scores(
 
     return scheme_average_scores
 
+# Fetch the latest attempt and compare old feedback with new feedback after processing the new prompt
+@app.post("/attempt/compare-latest-feedback", status_code=status.HTTP_200_OK)
+async def compare_latest_feedback(
+    request: ComparePromptRequest,  # Use the Pydantic model to parse the request body
+    db: Session = Depends(create_session)
+):
+    logging.info("Fetching the latest attempt from the database")
+
+    # Step 1: Fetch the latest attempt across the entire database
+    latest_attempt = db.query(AttemptModel).order_by(AttemptModel.date.desc()).first()
+
+    if not latest_attempt:
+        raise HTTPException(status_code=404, detail="No attempts found")
+
+    logging.info(f"Found latest attempt: {latest_attempt.attempt_id}")
+
+    # Step 2: Fetch the corresponding question for context
+    question = db.query(QuestionModel).filter(
+        QuestionModel.question_id == latest_attempt.question_id
+    ).first()
+
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    logging.info(f"Found question: {question.title}")
+
+    # Step 3: Use the same answer and re-run it with the new prompt to get new feedback
+    new_response = openAI_response(
+        question=question.question_details,
+        response=latest_attempt.answer,  # The same answer from the latest attempt
+        ideal=question.ideal,
+        ideal_system_name=question.ideal_system_name,
+        ideal_system_url=question.ideal_system_url,
+        system_name=latest_attempt.system_name,
+        system_url=latest_attempt.system_url,
+        prompt_text=request.prompt_text  # The new prompt provided for comparison
+    )
+
+    # Step 4: Process the new response (to extract scores and feedback)
+    new_feedback = process_response(new_response)
+
+    logging.info("New feedback generated using the new prompt")
+
+    # Step 5: Prepare the old feedback stored in the database
+    old_feedback = {
+        "question": question,
+        "answer": latest_attempt.answer,
+        "system_name": latest_attempt.system_name,
+        "system_url": latest_attempt.system_url,
+        "precision_score": latest_attempt.precision_score,
+        "accuracy_score": latest_attempt.accuracy_score,
+        "tone_score": latest_attempt.tone_score,
+        "accuracy_feedback": latest_attempt.accuracy_feedback,
+        "precision_feedback": latest_attempt.precision_feedback,
+        "tone_feedback": latest_attempt.tone_feedback,
+        "general_feedback": latest_attempt.feedback
+    }
+
+    logging.info("Old feedback prepared from the database")
+
+    # Step 6: Return both old and new feedback for comparison
+    return {
+        "old_feedback": old_feedback,
+        "new_feedback": new_feedback
+    }
+
 ## MANUAL FEEDBACK ROUTES
 @app.post("/manual-feedback", status_code=status.HTTP_201_CREATED)
 async def create_manual_feedback(
@@ -1683,6 +1786,162 @@ async def scan_create_ai_improvements(
             logging.info(f"AI Improvement created for question_id: {question.question_id}, user_id: {user.uuid}")
 
     return {"message": f"{improvements_created} AI improvements created."}
+
+## DYNAMIC PROMPT ROUTES ##
+@app.put("/prompt", status_code=status.HTTP_200_OK)
+async def create_or_update_prompt(
+    prompt: PromptBase,
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Fetch the existing prompt
+    existing_prompt = db.query(PromptModel).first()
+    if existing_prompt:
+        # Update the prompt text
+        existing_prompt.prompt_text = prompt.prompt_text
+        existing_prompt.updated_by = current_user.name
+        db.commit()
+        db.refresh(existing_prompt)
+        message = "Prompt updated successfully"
+        prompt_data = existing_prompt.to_dict()
+    else:
+        # Create a new prompt record
+        new_prompt = PromptModel(prompt_text=prompt.prompt_text, updated_by=current_user.name)
+        db.add(new_prompt)
+        db.commit()
+        db.refresh(new_prompt)
+        message = "Prompt updated successfully"
+        prompt_data = new_prompt.to_dict()
+
+    return {"message": message, "prompt": prompt_data}
+
+@app.delete("/prompt", status_code=status.HTTP_200_OK)
+async def delete_prompt(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Fetch the existing prompt
+    existing_prompt = db.query(PromptModel).first()
+    if existing_prompt:
+        # Delete the prompt
+        db.delete(existing_prompt)
+        db.commit()
+        return {"message": "Reverted to default prompt."}
+    else:
+        return {"message": "Already using default prompt."}
+
+@app.get("/prompt/current", status_code=status.HTTP_200_OK)
+async def get_current_prompt(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Fetch the current prompt
+    existing_prompt = db.query(PromptModel).first()
+    if existing_prompt and existing_prompt.prompt_text.strip():
+        prompt_text = existing_prompt.prompt_text
+        prompt_type = "dynamic"
+        updated_by = existing_prompt.updated_by
+        updated_at = existing_prompt.updated_at
+    else:
+        # Use the default prompt
+        prompt_text = get_default_prompt()
+        prompt_type = "default"
+        updated_by = None
+        updated_at = None
+
+    return {
+        "prompt_text": prompt_text,
+        "prompt_type": prompt_type,
+        "updated_by": updated_by,
+        "updated_at": updated_at
+    }
+
+## DYNAMIC VECTORSTORE ROUTES ##
+@app.post("/upload-faq-csv", status_code=201)
+async def upload_faq_csv(
+    file: UploadFile = File(...), 
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Ensure the uploaded file is a CSV
+    if file.content_type != 'text/csv':
+        raise HTTPException(status_code=400, detail="Invalid file format. Please upload a CSV file.")
+
+    # Save the uploaded file to DYNAMIC_CSV_PATH
+    contents = await file.read()
+    with open(DYNAMIC_CSV_PATH, 'wb') as f:
+        f.write(contents)
+
+    # Call the function in openAI.py to update the vectorstore
+    update_vectorstore()
+
+    return {"message": "FAQ CSV uploaded and vectorstore updated successfully."}
+
+@app.delete("/revert-faq-csv", status_code=200)
+async def revert_faq_csv(
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Delete the dynamic CSV file
+    if os.path.exists(DYNAMIC_CSV_PATH):
+        os.remove(DYNAMIC_CSV_PATH)
+        # Re-initialize the vectorstore to use the default CSV
+        update_vectorstore()
+        return {"message": "Reverted to default FAQ CSV and vectorstore updated."}
+    else:
+        return {"message": "Already using default."}
+
+## SYSTEM NAMES AND URL ROUTES ##
+@app.get("/systems", response_model=List[System], status_code=status.HTTP_200_OK)
+async def get_systems(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    systems = db.query(SystemModel).all()
+    return systems
+
+@app.post("/systems", response_model=System, status_code=status.HTTP_201_CREATED)
+async def add_system(
+    system: SystemCreate, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    new_system = SystemModel(name=system.name, url=system.url)
+    db.add(new_system)
+    db.commit()
+    db.refresh(new_system)
+    return new_system
+
+@app.put("/systems/{system_id}", response_model=System, status_code=status.HTTP_200_OK)
+async def update_system(
+    system_id: int, 
+    system: SystemUpdate, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    db_system = db.query(SystemModel).filter(SystemModel.id == system_id).first()
+    if not db_system:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System not found")
+    db_system.name = system.name
+    db_system.url = system.url
+    db.commit()
+    db.refresh(db_system)
+    return db_system
+
+@app.delete("/systems/{system_id}", status_code=status.HTTP_200_OK)
+async def delete_system(
+    system_id: int, 
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    db_system = db.query(SystemModel).filter(SystemModel.id == system_id).first()
+    if not db_system:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System not found")
+    db.delete(db_system)
+    db.commit()
+    return {"message": "System deleted successfully"}
 
 ## S3 BUCKET ROUTES ##
 def get_s3_image_urls(bucket_name, prefix):

@@ -24,7 +24,7 @@ function MyTeam() {
   const [schemeFilter, setSchemeFilter] = useState("All");
   const [search, setSearch] = useState("");
   const router = useRouter();
-  const accessRights = ["Trainee", "Admin"];
+  const accessRights = ["Admin", "Trainer", "Trainee"]; 
 
   // Load team members without scheme mastery first
   useEffect(() => {
@@ -49,9 +49,10 @@ function MyTeam() {
 
           // Sort team members immediately after fetching
           teamMembers = teamMembers.sort((a, b) => {
-            if (a.access_rights === "Admin" && b.access_rights !== "Admin") {
+            const accessOrder = ["Admin", "Trainer", "Trainee"];
+            if (accessOrder.indexOf(a.access_rights) < accessOrder.indexOf(b.access_rights)) {
               return -1;
-            } else if (a.access_rights !== "Admin" && b.access_rights === "Admin") {
+            } else if (accessOrder.indexOf(a.access_rights) > accessOrder.indexOf(b.access_rights)) {
               return 1;
             } else {
               return a.name.localeCompare(b.name);
@@ -225,7 +226,8 @@ function MyTeam() {
           member.name !== originalMember.name ||
           member.access_rights !== originalMember.access_rights ||
           member.password !== originalMember.password ||
-          JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes)
+          JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes) ||
+          member.dept !== originalMember.dept // Check if department is changed
         ) {
           const userRes = await fetch(`${API_URL}/user/${member.uuid}`, {
             method: "PUT",
@@ -237,7 +239,8 @@ function MyTeam() {
               name: member.name,
               access_rights: member.access_rights,
               schemes: member.schemes,
-              password: member.password
+              password: member.password,
+              dept: member.dept // Send department as well
             }),
           });
 
@@ -348,6 +351,7 @@ function MyTeam() {
               <th className="text-start py-2 px-3 border">Email</th>
               <th className="text-start py-2 px-3 border">Password</th>
               <th className="text-start py-2 px-3 border w-1/6">Access</th>
+              <th className="text-start py-2 px-3 border w-1/6">Department</th> {/* New Department Column */}
               <th className="text-start py-2 px-3 border w-1/3">Schemes</th>
               <th className="text-start py-2 px-3 border w-1/3">Scheme Mastery</th>
               <th className="w-[0px] p-0" />
@@ -455,6 +459,18 @@ function MyTeam() {
                     </div>
                   ) : (
                     i.access_rights
+                  )}
+                </td>
+                <td className="text-start py-2 px-3 border"> {/* New Department Column */}
+                  {editState ? (
+                    <input
+                      type="text"
+                      value={i.dept || "N.A"} // Handle null department case
+                      onChange={(e) => handleChange(idx, "dept", e.target.value)}
+                      className="border border-gray-300 p-1"
+                    />
+                  ) : (
+                    i.dept || "N.A"
                   )}
                 </td>
                 <td className="text-start py-2 px-3 border">

@@ -17,27 +17,45 @@ function Question({ user }) {
   const [loading, setLoading] = useState(false);
   const [submit, setSubmit] = useState(false);
   const [systems, setSystems] = useState([{ name: "", url: "" }]);
+  const [systemOptions, setSystemOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState([false]); // Initialize dropdown state
 
   // Predefined system names
-  const systemOptions = [
-    { name: "NICE 2.0", url: "https://cpfNICE 2.0.my.salesforce.com/" },
-    { name: "BEACON", url: "https://beacon.cpf.gov.sg/" },
-    { name: "CPF Super Admin Modules", url: "https://web-eservices.cpfb.gov.sg/admin/cseadmin" },
-    { name: "CPF website", url: "https://www.cpf.gov.sg/" },
-    { name: "ARISE Employer Portal", url: "https://ariseempr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
-    { name: "ARISE Member Portal", url: "https://arisembr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
-    { name: "CAYE Admin Portal", url: "https://intraprod-caye.cpf.gov.sg/caye/admin/web/" },
-    { name: "ERT Admin (CPF EZPay Admin Portal)", url: "https://intraprod2.cpf.gov.sg/ertadmin/loginForm.jsp" },
-    { name: "iQMS (eAppointment system)", url: "https://iqmsadmin.cpf.gov.sg/signin" },
-    { name: "CareShield Life Biz Portal", url: "https://hc-cbp-prd.careshieldlife.gov.sg/cbp/web/CISFNC00001" },
-    { name: "CareShield Life Website", url: "https://www.careshieldlife.gov.sg/" },
-    { name: "E-Housing Portal", url: "https://hseintra.cpf.gov.sg/hseadmin/login.jsp" },
-    { name: "DBC – Workfare Application", url: "Accessible via Start menu > All apps > DBC Application 7.3.6 > Workfare Applications" },
-    { name: "NPHC", url: "https://intranet-nphc.moh.gov.sg/" },
-    { name: "Mainframe/Mainframe WFH container", url: "https://cpfwiardsav05p.cpf.net/rdweb" },
-    { name: "Finesse (IPCC)", url: "https://ipclafinav01p.ipcc.cpf.gov.sg/desktop/container/landing.jsp?locale=en_US" }
-  ];
+  // const systemOptions = [
+  //   { name: "NICE 2.0", url: "https://cpfNICE 2.0.my.salesforce.com/" },
+  //   { name: "BEACON", url: "https://beacon.cpf.gov.sg/" },
+  //   { name: "CPF Super Admin Modules", url: "https://web-eservices.cpfb.gov.sg/admin/cseadmin" },
+  //   { name: "CPF website", url: "https://www.cpf.gov.sg/" },
+  //   { name: "ARISE Employer Portal", url: "https://ariseempr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
+  //   { name: "ARISE Member Portal", url: "https://arisembr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
+  //   { name: "CAYE Admin Portal", url: "https://intraprod-caye.cpf.gov.sg/caye/admin/web/" },
+  //   { name: "ERT Admin (CPF EZPay Admin Portal)", url: "https://intraprod2.cpf.gov.sg/ertadmin/loginForm.jsp" },
+  //   { name: "iQMS (eAppointment system)", url: "https://iqmsadmin.cpf.gov.sg/signin" },
+  //   { name: "CareShield Life Biz Portal", url: "https://hc-cbp-prd.careshieldlife.gov.sg/cbp/web/CISFNC00001" },
+  //   { name: "CareShield Life Website", url: "https://www.careshieldlife.gov.sg/" },
+  //   { name: "E-Housing Portal", url: "https://hseintra.cpf.gov.sg/hseadmin/login.jsp" },
+  //   { name: "DBC – Workfare Application", url: "Accessible via Start menu > All apps > DBC Application 7.3.6 > Workfare Applications" },
+  //   { name: "NPHC", url: "https://intranet-nphc.moh.gov.sg/" },
+  //   { name: "Mainframe/Mainframe WFH container", url: "https://cpfwiardsav05p.cpf.net/rdweb" },
+  //   { name: "Finesse (IPCC)", url: "https://ipclafinav01p.ipcc.cpf.gov.sg/desktop/container/landing.jsp?locale=en_US" }
+  // ];
+
+  useEffect(() => {
+    async function fetchSystems() {
+      try {
+        const res = await fetch(`${API_URL}/systems`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch systems");
+        }
+        const data = await res.json();
+        setSystemOptions(data.map((sys) => ({ name: sys.name, url: sys.url })));
+      } catch (error) {
+        console.error("Error fetching systems:", error);
+      }
+    }
+  
+    fetchSystems();
+  }, []);
 
   useEffect(() => {
     async function getData() {

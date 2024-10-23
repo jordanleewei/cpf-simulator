@@ -27,88 +27,88 @@ function MyTeam() {
   const router = useRouter();
 
   // Load team members without scheme mastery first
-useEffect(() => {
-  const fetchData = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-    
-    // Retrieve the token from localStorage
-    const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
-    const token = loggedUser ? loggedUser.access_token : null;
+  useEffect(() => {
+    const fetchData = async () => {
+      const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+      
+      // Retrieve the token from localStorage
+      const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+      const token = loggedUser ? loggedUser.access_token : null;
 
-    try {
-      // Fetch current user details
-      const userRes = await fetch(`${API_URL}/user/me`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      try {
+        // Fetch current user details
+        const userRes = await fetch(`${API_URL}/user/me`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
 
-      if (!userRes.ok) {
-        console.log("Authorization failed:", userRes.status);
-        router.push('/');
-        return;
+        if (!userRes.ok) {
+          console.log("Authorization failed:", userRes.status);
+          router.push('/');
+          return;
+        }
+
+        const user = await userRes.json();
+        setCurrentUser(user);
+
+        // Fetch team members
+        const res = await fetch(`${API_URL}/user`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          let teamMembers = await res.json();
+
+          // Filter to only include team members with "Trainee" access rights and same department as current user
+          teamMembers = teamMembers.filter((member) => 
+            member.access_rights === "Trainee" && member.dept === user.dept
+          );
+
+          // Sort the filtered team members by name
+          teamMembers = teamMembers.sort((a, b) => a.name.localeCompare(b.name));
+
+          setAllTeamMembers(teamMembers);
+          setOriginalTeamMembers(teamMembers);
+          setDisplayMembers(teamMembers);
+
+          // Lazy load scheme mastery data after the team members are displayed
+          teamMembers.forEach(member => loadSchemeMasteryForMember(member, token));
+        } else {
+          console.log("Authorization failed:", res.status);
+          router.push('/');
+          return;
+        }
+
+        // Fetch schemes
+        const res2 = await fetch(`${API_URL}/distinct/scheme`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (res2.ok) {
+          const schemes = await res2.json();
+          const formattedSchemes = Array.isArray(schemes)
+            ? schemes.map(
+                (scheme) =>
+                  scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
+              )
+            : [];
+          setAllSchemes(formattedSchemes);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
+    };
 
-      const user = await userRes.json();
-      setCurrentUser(user);
-
-      // Fetch team members
-      const res = await fetch(`${API_URL}/user`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (res.ok) {
-        let teamMembers = await res.json();
-
-        // Filter to only include team members with "Trainee" access rights and same department as current user
-        teamMembers = teamMembers.filter((member) => 
-          member.access_rights === "Trainee" && member.dept === user.dept
-        );
-
-        // Sort the filtered team members by name
-        teamMembers = teamMembers.sort((a, b) => a.name.localeCompare(b.name));
-
-        setAllTeamMembers(teamMembers);
-        setOriginalTeamMembers(teamMembers);
-        setDisplayMembers(teamMembers);
-
-        // Lazy load scheme mastery data after the team members are displayed
-        teamMembers.forEach(member => loadSchemeMasteryForMember(member, token));
-      } else {
-        console.log("Authorization failed:", res.status);
-        router.push('/');
-        return;
-      }
-
-      // Fetch schemes
-      const res2 = await fetch(`${API_URL}/distinct/scheme`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (res2.ok) {
-        const schemes = await res2.json();
-        const formattedSchemes = Array.isArray(schemes)
-          ? schemes.map(
-              (scheme) =>
-                scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
-            )
-          : [];
-        setAllSchemes(formattedSchemes);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
-  fetchData();
-}, [router]);
+    fetchData();
+  }, [router]);
 
   // Function to load scheme mastery for each member lazily
   const loadSchemeMasteryForMember = async (member, token) => {
@@ -148,8 +148,7 @@ useEffect(() => {
       filteredMembers = filteredMembers.filter(
         (member) =>
           member.name.toLowerCase().includes(search.toLowerCase()) ||
-          member.email.toLowerCase().includes(search.toLowerCase()) ||
-          member.dept.toLowerCase().includes(search.toLowerCase())
+          member.email.toLowerCase().includes(search.toLowerCase())
       );
     }
 

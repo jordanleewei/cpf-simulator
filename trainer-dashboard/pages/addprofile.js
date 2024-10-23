@@ -200,8 +200,8 @@ function AddProfile() {
 
         {/* Access Rights display */}
         <div className="flex flex-row justify-center items-center">
-          <span className="flex w-1/4">
-            <p className="text-red-500">*</p>Access Rights:
+          <span className="flex w-[70px]">
+            <p className="text-red-500">*</p>Access:
           </span>
           <Input
             value={accessRight} // Display the access right
@@ -212,7 +212,7 @@ function AddProfile() {
 
         {/* Dept input */}
         <div className="flex flex-row justify-center items-center">
-          <span className="flex w-28">
+          <span className="flex w-[105px]">
             <p className="text-red-500">*</p>Department:
           </span>
           <Input

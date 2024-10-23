@@ -221,7 +221,7 @@ function AddProfile() {
 
         {/* Dept input */}
         <div className="flex flex-row justify-center items-center">
-          <span className="flex w-28">
+          <span className="flex w-[105px]">
             <p className="text-red-500">*</p>Department:
           </span>
           <Input

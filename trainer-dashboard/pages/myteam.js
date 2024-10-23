@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import SchemeTags from "../components/SchemeTags";
 import SchemeFilter from "../components/SchemeFilter";
 import SearchBar from "../components/SearchBar";
-import { AiFillCaretDown, AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { FaRegTrashCan } from "react-icons/fa6";
 import DeleteModal from "../components/DeleteModal";
 import { BiRefresh } from "react-icons/bi";
-import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@nextui-org/react";
+import Button from "@nextui-org/react";
 
 function MyTeam() {
   const [allTeamMembers, setAllTeamMembers] = useState([]);
@@ -26,74 +26,101 @@ function MyTeam() {
   const [currentUser, setCurrentUser] = useState(null); // To store current user details
   const router = useRouter();
 
-  // Load current user and team members from the same department
+  // Load team members without scheme mastery first
   useEffect(() => {
     const fetchData = async () => {
       const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+      
+      // Retrieve the token from localStorage
       const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
       const token = loggedUser ? loggedUser.access_token : null;
 
       try {
-        // Fetch current user details using the /user/me route
-        const currentUserRes = await fetch(`${API_URL}/user/me`, {
+        // Fetch team members
+        const res = await fetch(`${API_URL}/user`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+            "Authorization": `Bearer ${token}`,
           },
         });
 
-        if (currentUserRes.ok) {
-          const userDetails = await currentUserRes.json();
-          setCurrentUser(userDetails);
+        if (res.ok) {
+          let teamMembers = await res.json();
 
-          // Fetch team members
-          const res = await fetch(`${API_URL}/user`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+          // Sort team members immediately after fetching
+          teamMembers = teamMembers.sort((a, b) => {
+            const accessOrder = ["Admin", "Trainer", "Trainee"];
+            if (accessOrder.indexOf(a.access_rights) < accessOrder.indexOf(b.access_rights)) {
+              return -1;
+            } else if (accessOrder.indexOf(a.access_rights) > accessOrder.indexOf(b.access_rights)) {
+              return 1;
+            } else {
+              return a.name.localeCompare(b.name);
+            }
           });
 
-          if (res.ok) {
-            let teamMembers = await res.json();
+          setAllTeamMembers(teamMembers);
+          setOriginalTeamMembers(teamMembers);
+          setDisplayMembers(teamMembers);
 
-            // Filter team members to only include "Trainee" users from the same department
-            teamMembers = teamMembers.filter(
-              (member) =>
-                member.access_rights === "Trainee" && member.dept === userDetails.dept
-            );
-
-            setAllTeamMembers(teamMembers);
-            setOriginalTeamMembers(teamMembers);
-            setDisplayMembers(teamMembers);
-
-            // Fetch schemes
-            const res2 = await fetch(`${API_URL}/distinct/scheme`, {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            if (res2.ok) {
-              const schemes = await res2.json();
-              setAllSchemes(schemes);
-            }
-          } else {
-            console.error("Failed to fetch team members.");
-          }
+          // Lazy load scheme mastery data after the team members are displayed
+          teamMembers.forEach(member => loadSchemeMasteryForMember(member, token));
         } else {
-          console.error("Failed to fetch current user details.");
-          router.push("/");
+          console.log("Authorization failed:", res.status);
+          router.push('/');
+          return;
+        }
+
+        // Fetch schemes
+        const res2 = await fetch(`${API_URL}/distinct/scheme`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (res2.ok) {
+          const schemes = await res2.json();
+          const formattedSchemes = Array.isArray(schemes)
+            ? schemes.map(
+                (scheme) =>
+                  scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase()
+              )
+            : [];
+          setAllSchemes(formattedSchemes);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        router.push("/");
       }
     };
 
     fetchData();
   }, [router]);
+
+  // Function to load scheme mastery for each member lazily
+  const loadSchemeMasteryForMember = async (member, token) => {
+    const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+    try {
+      const res = await fetch(`${API_URL}/user/${member.uuid}/schemes`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const schemeMasteryRes = await res.json();
+        setAllTeamMembers((prev) => 
+          prev.map((tm) => tm.uuid === member.uuid 
+            ? { ...tm, schemeMastery: schemeMasteryRes } 
+            : tm)
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching scheme mastery:", error);
+    }
+  };
 
   useEffect(() => {
     let filteredMembers = allTeamMembers;

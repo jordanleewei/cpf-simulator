@@ -182,6 +182,9 @@ function MyTeam() {
   const handleCancel = () => {
     setAllTeamMembers(originalTeamMembers);
     setDisplayMembers(originalTeamMembers);
+    // Reload scheme mastery data for all original team members
+    const token = JSON.parse(window.localStorage.getItem("loggedUser")).access_token;
+    originalTeamMembers.forEach(member => loadSchemeMasteryForMember(member, token));
     setEditState(false);
     setDeleteQueue([]);
     setResetPasswordIndex(null);

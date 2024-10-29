@@ -164,7 +164,6 @@ async def upload_questions_csv(
         question_difficulty = row['Complexity']
         question_details = row['Enquiry']
         ideal = row['Reply in system']
-        ideal_system_name = row['System (for internal reference to check against columns H, J, L and N)']
         ideal_system_urls = [
             (row['System 1'], row['System 1 URL']),
             (row['System 2'], row['System 2 URL']),
@@ -187,8 +186,14 @@ async def upload_questions_csv(
                 continue
 
         # Check if the question already exists to avoid duplicates
-        existing_question = db.query(QuestionModel).filter(QuestionModel.title == title, QuestionModel.scheme_name == scheme_name).first()
+        existing_question = db.query(QuestionModel).filter(
+            QuestionModel.scheme_name == scheme_name,
+            QuestionModel.title == title,
+            QuestionModel.question_details == question_details
+        ).first()
+
         if existing_question:
+            logger.info(f"Question already exists. Skipping.")
             continue  # Skip this row if question already exists
 
         # Create a new QuestionModel instance

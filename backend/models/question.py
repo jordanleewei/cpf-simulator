@@ -30,5 +30,6 @@ class QuestionModel(Base):
             'title': self.title,
             'scheme_name': self.scheme, # Don't change this line
             'ideal_system_name': self.ideal_system_name,
-            'ideal_system_url': self.ideal_system_url
+            'ideal_system_url': self.ideal_system_url,
+            'created':self.created
         }

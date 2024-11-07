@@ -16,6 +16,16 @@ function Exercises() {
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  };
+
   useEffect(() => {
     async function getQuestions() {
       if (router.isReady) {
@@ -23,24 +33,25 @@ function Exercises() {
         window.localStorage.setItem("schemeName", scheme_name);
 
         try {
-          const res = await fetch(
-            `${API_URL}/questions/scheme/${scheme_name}`
-          );
-          const questions = await res.json();
-
-          // Ensure questions is always an array
-          setAllQuestions(Array.isArray(questions) ? questions : []);
-
-          setName(
-            scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1)
-          );
+          const res = await fetch(`${API_URL}/questions/scheme/${scheme_name}`);
+          let questions = await res.json();
+  
+          // Ensure questions is always an array, then sort by created date
+          if (Array.isArray(questions)) {
+            questions.sort((a, b) => new Date(b.created) - new Date(a.created));
+          } else {
+            questions = [];
+          }
+  
+          setAllQuestions(questions);
+          setName(scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1));
         } catch (error) {
           console.error("Failed to fetch questions:", error);
           setAllQuestions([]); // Fallback to empty array
         }
       }
     }
-
+  
     getQuestions();
   }, [router.isReady]);
 
@@ -162,7 +173,7 @@ function Exercises() {
                   Difficulty
                 </th>
                 <th className={`${tableCenterCellStyle} bg-dark-grey`}>
-                  Scheme
+                  Date Created
                 </th>
                 <th className="w-[0px] p-0" />
               </tr>
@@ -173,12 +184,24 @@ function Exercises() {
                 allQuestions.map((question, index) => (
                   <tr
                     key={index + 1}
-                    className="hover:bg-light-gray hover:cursor-pointer"
+                    className="hover:bg-light-gray hover:cursor-pointer group" // Added group class here
                   >
                     <td
-                      className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
+                      className={`${tableCellStyle} hover:underline hover:underline-offset-2 relative`}
                       onClick={() => handleQuestionNav(question.question_id)}
-                    >{`${index + 1}. ${question.title}`}</td>
+                    >
+                      {`${index + 1}. ${question.title}`}
+
+                      {/* Tooltip for question preview */}
+                      <div
+                        className="absolute left-0 top-full mt-1 w-64 p-2 text-sm bg-gray-700 text-white rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                        style={{ whiteSpace: "normal" }} // Ensures multi-line preview if content is long
+                      >
+                        {question.question_details
+                          ? question.question_details.substring(0, 100) + "..."
+                          : "No preview available"}
+                      </div>
+                    </td>
                     <td
                       className={`${tableCenterCellStyle} ${getDifficultyColor(
                         question.question_difficulty
@@ -187,7 +210,7 @@ function Exercises() {
                       {question.question_difficulty}
                     </td>
                     <td className={`${tableCenterCellStyle}`}>
-                      {question.scheme_name}
+                      {formatDate(question.created)}
                     </td>
                     <td>
                       {editState && (

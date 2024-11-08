@@ -6,6 +6,9 @@ import tickimage from "../../public/tickimage.png";
 import { ChevronLeft } from "@mui/icons-material";
 // components
 import isAuth from "../../components/isAuth";
+import DifficultySearchBar from "../../components/DifficultySearchBar";
+import StatusSearchBar from "../../components/StatusSearchBar";
+import DateSearchBar from "../../components/DateSearchBar";
 
 function Exercises() { // Remove the 'user' parameter
   // Get API URL from environment variables
@@ -14,6 +17,20 @@ function Exercises() { // Remove the 'user' parameter
   const { submit } = router.query;
   const [name, setName] = useState("");
   const [allQuestions, setAllQuestions] = useState([]);
+  const [filteredQuestions, setFilteredQuestions] = useState([]);
+  const [difficultyFilter, setDifficultyFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  };
 
   useEffect(() => {
     async function getQuestions() {
@@ -42,8 +59,13 @@ function Exercises() { // Remove the 'user' parameter
         );
         const questions = await res.json();
 
-        // Transform the scheme_name
-        const transformedQuestions = questions.map((question) => ({
+        // Sort questions by 'created' date in descending order
+        const sortedQuestions = questions.sort((a, b) => 
+          new Date(b.created) - new Date(a.created)
+        );
+
+        // Transform the scheme_name and set the sorted questions
+        const transformedQuestions = sortedQuestions.map((question) => ({
           ...question,
           scheme_name: {
             ...question.scheme_name,
@@ -58,6 +80,20 @@ function Exercises() { // Remove the 'user' parameter
 
     getQuestions();
   }, [router.isReady]);
+
+  useEffect(() => {
+    const filterQuestions = () => {
+      const filtered = allQuestions.filter((question) => {
+        const matchesDifficulty = difficultyFilter ? question.question_difficulty === difficultyFilter : true;
+        const matchesStatus = statusFilter ? question.status === statusFilter : true;
+        const matchesDate = dateFilter ? formatDate(question.created).startsWith(dateFilter) : true;
+        return matchesDifficulty && matchesStatus && matchesDate;
+      });
+      setFilteredQuestions(filtered);
+    };
+
+    filterQuestions();
+  }, [difficultyFilter, statusFilter, dateFilter, allQuestions]);
 
   function handleQuestionNav(question_id) {
     router.push(
@@ -126,6 +162,13 @@ function Exercises() { // Remove the 'user' parameter
         <div className="bg-white min-w-full rounded-md p-6">
           <div className="font-bold text-3xl pt-6 pb-10">{name} Scheme</div>
 
+          {/* Filters */}
+          <div className="flex justify-between mb-4">
+            <StatusSearchBar setFilter={setStatusFilter} />
+            <DifficultySearchBar setFilter={setDifficultyFilter} />
+            <DateSearchBar setDateFilter={setDateFilter} />
+          </div>
+
           {/* Table */}
           <table className="w-full table-fixed border border-collapse border-slate-200">
             <thead>
@@ -140,7 +183,7 @@ function Exercises() { // Remove the 'user' parameter
                   Difficulty
                 </th>
                 <th className={`${tableCenterCellStyle} bg-dark-grey`}>
-                  Scheme
+                  Date Created
                 </th>
                 <th className={`${tableCenterCellStyle} bg-dark-grey`}>
                   Review
@@ -149,10 +192,10 @@ function Exercises() { // Remove the 'user' parameter
             </thead>
 
             <tbody>
-              {allQuestions.map((question, index) => (
+              {filteredQuestions.map((question, index) => (
                 <tr
                   key={index + 1}
-                  className="hover:bg-light-gray hover:cursor-pointer"
+                  className="hover:bg-light-gray hover:cursor-pointer group relative"
                 >
                   <td
                     className={`${tableCenterCellStyle}`}
@@ -169,7 +212,19 @@ function Exercises() { // Remove the 'user' parameter
                   <td
                     className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
                     onClick={() => handleQuestionNav(question.question_id)}
-                  >{`${index + 1}. ${question.title}`}</td>
+                  >
+                    {`${index + 1}. ${question.title}`}
+                    
+                    {/* Tooltip for question preview */}
+                    <div
+                        className="absolute left-0 top-full mt-1 w-64 p-2 text-sm bg-gray-700 text-white rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                        style={{ whiteSpace: "normal" }} // Ensures multi-line preview if content is long
+                    >
+                      {question.question_details
+                        ? question.question_details.substring(0, 100) + "..."
+                        : "No preview available"}
+                    </div>
+                  </td>
                   <td
                     className={`${tableCenterCellStyle} ${getdifficultyColor(
                       question.question_difficulty
@@ -178,7 +233,7 @@ function Exercises() { // Remove the 'user' parameter
                     {question.question_difficulty}
                   </td>
                   <td className={`${tableCenterCellStyle}`}>
-                    {question.scheme_name.scheme_name}
+                  {formatDate(question.created)}
                   </td>
                   <td
                     className={`${tableCenterCellStyle} hover:underline hover:underline-offset-2 `}

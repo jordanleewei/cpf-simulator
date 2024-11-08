@@ -193,7 +193,7 @@ async def upload_questions_csv(
         ).first()
 
         if existing_question:
-            logger.info(f"Question already exists. Skipping.")
+            logger.info(f"Question {title} with details {question_details} already exists. Skipping.")
             continue  # Skip this row if question already exists
 
         # Create a new QuestionModel instance

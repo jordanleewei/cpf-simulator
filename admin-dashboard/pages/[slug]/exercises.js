@@ -6,6 +6,8 @@ import { FaRegTrashCan } from "react-icons/fa6";
 // components
 import isAuth from "../../components/isAuth";
 import DeleteModal from "../../components/DeleteModal";
+import DateSearchBar from "../../components/DateSearchBar";
+import DifficultySearchBar from "../../components/DifficultySearchBar";
 
 function Exercises() {
   const router = useRouter();
@@ -13,6 +15,9 @@ function Exercises() {
   const [allQuestions, setAllQuestions] = useState([]);
   const [editState, setEditState] = useState(false);
   const [deleteId, setDeleteId] = useState("");
+  const [filteredQuestions, setFilteredQuestions] = useState([]);
+  const [difficultyFilter, setDifficultyFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
@@ -44,6 +49,7 @@ function Exercises() {
           }
   
           setAllQuestions(questions);
+          setFilteredQuestions(questions); // Initialize filteredQuestions with all questions
           setName(scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1));
         } catch (error) {
           console.error("Failed to fetch questions:", error);
@@ -51,9 +57,19 @@ function Exercises() {
         }
       }
     }
-  
+
     getQuestions();
   }, [router.isReady]);
+
+  // Filter questions based on date and difficulty
+  useEffect(() => {
+    const filtered = allQuestions.filter((question) => {
+      const matchesDifficulty = difficultyFilter ? question.question_difficulty === difficultyFilter : true;
+      const matchesDate = dateFilter ? formatDate(question.created).startsWith(dateFilter) : true;
+      return matchesDifficulty && matchesDate;
+    });
+    setFilteredQuestions(filtered);
+  }, [difficultyFilter, dateFilter, allQuestions]);
 
   function handleQuestionNav(question_id) {
     router.push(
@@ -162,6 +178,13 @@ function Exercises() {
               </div>
             )}
           </div>
+
+          {/* Filters */}
+          <div className="flex space-x-4 mb-4">
+            <DifficultySearchBar setFilter={setDifficultyFilter} />
+            <DateSearchBar setDateFilter={setDateFilter} />
+          </div>
+
           {/* Table */}
           <table className="w-full table-fixed border border-collapse border-slate-200">
             <thead>
@@ -180,8 +203,8 @@ function Exercises() {
             </thead>
 
             <tbody>
-              {allQuestions.length > 0 ? (
-                allQuestions.map((question, index) => (
+              {filteredQuestions.length > 0 ? (
+                filteredQuestions.map((question, index) => (
                   <tr
                     key={index + 1}
                     className="hover:bg-light-gray hover:cursor-pointer group" // Added group class here

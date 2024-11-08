@@ -195,7 +195,7 @@ function Exercises() { // Remove the 'user' parameter
               {filteredQuestions.map((question, index) => (
                 <tr
                   key={index + 1}
-                  className="hover:bg-light-gray hover:cursor-pointer"
+                  className="hover:bg-light-gray hover:cursor-pointer group relative"
                 >
                   <td
                     className={`${tableCenterCellStyle}`}
@@ -212,7 +212,19 @@ function Exercises() { // Remove the 'user' parameter
                   <td
                     className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
                     onClick={() => handleQuestionNav(question.question_id)}
-                  >{`${index + 1}. ${question.title}`}</td>
+                  >
+                    {`${index + 1}. ${question.title}`}
+                    
+                    {/* Tooltip for question preview */}
+                    <div
+                        className="absolute left-0 top-full mt-1 w-64 p-2 text-sm bg-gray-700 text-white rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                        style={{ whiteSpace: "normal" }} // Ensures multi-line preview if content is long
+                    >
+                      {question.question_details
+                        ? question.question_details.substring(0, 100) + "..."
+                        : "No preview available"}
+                    </div>
+                  </td>
                   <td
                     className={`${tableCenterCellStyle} ${getdifficultyColor(
                       question.question_difficulty

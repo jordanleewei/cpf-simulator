@@ -168,7 +168,9 @@ async def upload_questions_csv(
             (row['System 1'], row['System 1 URL']),
             (row['System 2'], row['System 2 URL']),
             (row['System 3'], row['System 3 URL']),
-            (row['System 4'], row['System 4 URL'])
+            (row['System 4'], row['System 4 URL']),
+            (row['System 5'], row['System 5 URL']),
+            (row['System 6'], row['System 6 URL'])
         ]
         
         # Concatenate all system names and URLs

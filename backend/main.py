@@ -190,7 +190,6 @@ async def upload_questions_csv(
         # Check if the question already exists to avoid duplicates
         existing_question = db.query(QuestionModel).filter(
             QuestionModel.scheme_name == scheme_name,
-            QuestionModel.title == title,
             QuestionModel.question_details == question_details
         ).first()
 

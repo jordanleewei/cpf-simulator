@@ -8,6 +8,7 @@ import isAuth from "../../components/isAuth";
 import DeleteModal from "../../components/DeleteModal";
 import DateSearchBar from "../../components/DateSearchBar";
 import DifficultySearchBar from "../../components/DifficultySearchBar";
+import TopicSearchBar from "../../components/TopicSearchBar";
 
 function Exercises() {
   const router = useRouter();
@@ -18,6 +19,7 @@ function Exercises() {
   const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [difficultyFilter, setDifficultyFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   // Get API URL from environment variables
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
@@ -66,10 +68,11 @@ function Exercises() {
     const filtered = allQuestions.filter((question) => {
       const matchesDifficulty = difficultyFilter ? question.question_difficulty === difficultyFilter : true;
       const matchesDate = dateFilter ? formatDate(question.created).startsWith(dateFilter) : true;
-      return matchesDifficulty && matchesDate;
+      const matchesSearchTerm = !searchTerm || question.question_details?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesDifficulty && matchesDate && matchesSearchTerm;
     });
     setFilteredQuestions(filtered);
-  }, [difficultyFilter, dateFilter, allQuestions]);
+  }, [difficultyFilter, dateFilter, searchTerm, allQuestions]);
 
   function handleQuestionNav(question_id) {
     router.push(
@@ -181,6 +184,7 @@ function Exercises() {
 
           {/* Filters */}
           <div className="flex space-x-4 mb-4">
+            <TopicSearchBar setSearch={setSearchTerm} />
             <DifficultySearchBar setFilter={setDifficultyFilter} />
             <DateSearchBar setDateFilter={setDateFilter} />
           </div>

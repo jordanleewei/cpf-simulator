@@ -9,6 +9,7 @@ import isAuth from "../../components/isAuth";
 import DifficultySearchBar from "../../components/DifficultySearchBar";
 import StatusSearchBar from "../../components/StatusSearchBar";
 import DateSearchBar from "../../components/DateSearchBar";
+import TopicSearchBar from "../../components/TopicSearchBar";
 
 function Exercises() { // Remove the 'user' parameter
   // Get API URL from environment variables
@@ -21,6 +22,7 @@ function Exercises() { // Remove the 'user' parameter
   const [difficultyFilter, setDifficultyFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -84,16 +86,30 @@ function Exercises() { // Remove the 'user' parameter
   useEffect(() => {
     const filterQuestions = () => {
       const filtered = allQuestions.filter((question) => {
-        const matchesDifficulty = difficultyFilter ? question.question_difficulty === difficultyFilter : true;
-        const matchesStatus = statusFilter ? question.status === statusFilter : true;
-        const matchesDate = dateFilter ? formatDate(question.created).startsWith(dateFilter) : true;
-        return matchesDifficulty && matchesStatus && matchesDate;
+        const matchesDifficulty = difficultyFilter
+          ? question.question_difficulty === difficultyFilter
+          : true;
+        const matchesStatus = statusFilter
+          ? question.status === statusFilter
+          : true;
+        const matchesDate = dateFilter
+          ? formatDate(question.created).startsWith(dateFilter)
+          : true;
+        const matchesSearchTerm = searchTerm
+          ? question.question_details
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase())
+          : true;
+
+        return (
+          matchesDifficulty && matchesStatus && matchesDate && matchesSearchTerm
+        );
       });
       setFilteredQuestions(filtered);
     };
 
     filterQuestions();
-  }, [difficultyFilter, statusFilter, dateFilter, allQuestions]);
+  }, [difficultyFilter, statusFilter, dateFilter, searchTerm, allQuestions]);
 
   function handleQuestionNav(question_id) {
     router.push(
@@ -165,6 +181,7 @@ function Exercises() { // Remove the 'user' parameter
           {/* Filters */}
           <div className="flex justify-between mb-4">
             <StatusSearchBar setFilter={setStatusFilter} />
+            <TopicSearchBar setSearch={setSearchTerm} />
             <DifficultySearchBar setFilter={setDifficultyFilter} />
             <DateSearchBar setDateFilter={setDateFilter} />
           </div>

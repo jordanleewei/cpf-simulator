@@ -353,27 +353,63 @@ async def update_user(
 
 @app.delete("/user/{user_id}", status_code=status.HTTP_201_CREATED)
 async def delete_user(
-    user_id: str, 
-    db: Session = Depends(create_session), 
+    user_id: str,
+    db: Session = Depends(create_session),
     current_user: UserModel = Depends(get_current_user)
 ):
+    """
+    Deletes a user and all related data including attempts, manual feedback,
+    AI improvements, and scheme associations.
+    """
     db_user = db.query(UserModel).filter(UserModel.uuid == user_id).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    else:
-        try:
-            db_user_attempts= db.query(AttemptModel).filter(AttemptModel.user_id == user_id).all()
-            if db_user_attempts: 
-                for user_attempt in db_user_attempts:
-                    db.delete(user_attempt)
-                    
-            db.delete(db_user)
-            db.commit()
-            return JSONResponse(content = {'message' : 'User deleted'}, status_code=201)
-        
-        except Exception as e:
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Unable to delete user. {e}")
+
+    try:
+        logging.info(f"Starting deletion for user: {user_id}")
+
+        # Fetch all attempts made by the user
+        user_attempts = db.query(AttemptModel).filter(AttemptModel.user_id == user_id).all()
+
+        if not user_attempts:
+            return {"message": "No attempts found for the user."}
+
+        # Delete related manual feedback and AI improvements
+        for attempt in user_attempts:
+            # Delete manual feedback associated with the attempt
+            db.query(ManualFeedbackModel).filter(
+                ManualFeedbackModel.attempt_id == attempt.attempt_id
+            ).delete(synchronize_session=False)
+            logging.info(f"Deleted manual feedbacks")
+
+            # Delete AI improvement records associated with the question and user
+            db.query(AIImprovementsModel).filter(
+                AIImprovementsModel.question_id == attempt.question_id,
+                AIImprovementsModel.user_id == user_id
+            ).delete(synchronize_session=False)
+            logging.info(f"Deleted AI Improvements")
+
+            # Delete the attempt
+            logging.info(f"Deleting attempt: {attempt.attempt_id}")
+            db.delete(attempt)
+
+        # Remove user from all schemes
+        db.query(user_scheme_association).filter(
+            user_scheme_association.c.user_table_id == user_id
+        ).delete(synchronize_session=False)
+        logging.info(f"Removed user {user_id} from all schemes")
+
+        # Finally, delete the user
+        db.delete(db_user)
+        db.commit()
+        logging.info(f"User {user_id} deleted successfully")
+
+        return JSONResponse(content={'message': 'User and associated data deleted'}, status_code=201)
+
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Failed to delete user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unable to delete user: {str(e)}")
 
 @app.post("/user", status_code=status.HTTP_201_CREATED)
 async def create_user(

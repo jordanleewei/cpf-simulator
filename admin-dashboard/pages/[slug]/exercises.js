@@ -137,7 +137,7 @@ function Exercises() {
       </button>
       {/* for delete modal */}
       {deleteId && (
-        <div className="w-full h-full flex justify-center items-center fixed -top-0.5">
+        <div className="w-full h-full flex justify-center items-center fixed -top-0.5 z-50">
           <DeleteModal
             id={deleteId}
             setId={setDeleteId}

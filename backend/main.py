@@ -864,25 +864,49 @@ async def get_questions_by_question_id(
 
 @app.delete("/question/{question_id}", status_code=status.HTTP_201_CREATED)
 async def delete_question(
-    question_id: str, 
-    db: Session = Depends(create_session), 
+    question_id: str,
+    db: Session = Depends(create_session),
     current_user: UserModel = Depends(get_current_user)
 ):
+    """
+    Deletes a question and all its associated attempts, manual feedback, and AI improvements.
+    """
+    # Find the question
     db_question = db.query(QuestionModel).filter(QuestionModel.question_id == question_id).first()
     if not db_question:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    db_attempts = db.query(AttemptModel).filter(AttemptModel.question_id == question_id)
     try:
-        if db_attempts:
-            for attempt in db_attempts:
-                db.delete(attempt)
+        # Find all attempts associated with the question
+        user_attempts = db.query(AttemptModel).filter(AttemptModel.question_id == question_id).all()
+
+        for attempt in user_attempts:
+            # Delete manual feedback associated with the attempt
+            db.query(ManualFeedbackModel).filter(
+                ManualFeedbackModel.attempt_id == attempt.attempt_id
+            ).delete(synchronize_session=False)
+            logging.info(f"Deleted manual feedbacks for attempt: {attempt.attempt_id}")
+
+            # Delete AI improvements associated with the attempt
+            db.query(AIImprovementsModel).filter(
+                AIImprovementsModel.question_id == attempt.question_id
+            ).delete(synchronize_session=False)
+            logging.info(f"Deleted AI improvements for attempt: {attempt.attempt_id}")
+
+            # Delete the attempt itself
+            logging.info(f"Deleting attempt: {attempt.attempt_id}")
+            db.delete(attempt)
+
+        # Delete the question itself
+        logging.info(f"Deleting question: {question_id}")
         db.delete(db_question)
         db.commit()
-        return JSONResponse(content={"message": "Question deleted successfully along with related attempts."}, status_code=201)
+
+        return JSONResponse(content={"message": "Question and all associated data deleted successfully."}, status_code=201)
     
     except Exception as e:
         db.rollback()
+        logging.error(f"Failed to delete question {question_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Unable to delete question. {e}")
 
 @app.get("/questions/all", status_code=status.HTTP_201_CREATED)

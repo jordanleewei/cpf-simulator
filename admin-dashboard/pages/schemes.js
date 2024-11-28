@@ -63,6 +63,7 @@ function Schemes() {
   const handleFileUpload = async () => {
     if (!csvFile) {
       setUploadMessage("Please select a CSV file first.");
+      setTimeout(() => setUploadMessage(""), 5000);
       return;
     }
 
@@ -85,6 +86,9 @@ function Schemes() {
     } catch (error) {
       console.error("Error uploading CSV:", error);
       setUploadMessage("An error occurred during upload.");
+    } finally {
+      // Clear the message after 5 seconds
+      setTimeout(() => setUploadMessage(""), 5000);
     }
   };
 

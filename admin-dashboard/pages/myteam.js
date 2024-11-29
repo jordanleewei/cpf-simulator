@@ -124,13 +124,13 @@ function MyTeam() {
 
   useEffect(() => {
     let filteredMembers = allTeamMembers;
-
+  
     if (schemeFilter !== "All") {
       filteredMembers = filteredMembers.filter((member) =>
         member.schemes.includes(schemeFilter)
       );
     }
-
+  
     if (search !== "") {
       filteredMembers = filteredMembers.filter(
         (member) =>
@@ -138,7 +138,7 @@ function MyTeam() {
           member.email.toLowerCase().includes(search.toLowerCase())
       );
     }
-
+  
     setDisplayMembers(filteredMembers);
   }, [schemeFilter, search, allTeamMembers]);
 
@@ -191,9 +191,12 @@ function MyTeam() {
   };
 
   const handleChange = (index, field, value) => {
+    const globalIndex = allTeamMembers.findIndex(
+      (member) => member.uuid === displayMembers[index].uuid
+    );
     setAllTeamMembers((prevMembers) =>
       prevMembers.map((member, idx) =>
-        idx === index ? { ...member, [field]: value } : member
+        idx === globalIndex ? { ...member, [field]: value } : member
       )
     );
     setDisplayMembers((prevMembers) =>
@@ -204,9 +207,12 @@ function MyTeam() {
   };
 
   const handleSchemeChange = (index, updatedSchemes) => {
+    const globalIndex = allTeamMembers.findIndex(
+      (member) => member.uuid === displayMembers[index].uuid
+    );
     setAllTeamMembers((prevMembers) =>
       prevMembers.map((member, idx) =>
-        idx === index ? { ...member, schemes: updatedSchemes } : member
+        idx === globalIndex ? { ...member, schemes: updatedSchemes } : member
       )
     );
     setDisplayMembers((prevMembers) =>

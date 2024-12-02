@@ -76,7 +76,18 @@ export default function TableCustomized({ rows }) {
             <tr key={idx}>
               <td>{row.question_title}</td>
               <td>{row.scheme_name}</td>
-              <td align="right">{row.date}</td>
+              <td align="right">
+                {(() => {
+                  const date = new Date(row.date); // Parse the date
+                  date.setUTCHours(date.getUTCHours() + 8); // Add 8 hours to UTC time
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, "0"); // Ensure 2-digit month
+                  const day = String(date.getDate()).padStart(2, "0"); // Ensure 2-digit day
+                  const hours = String(date.getHours()).padStart(2, "0"); // Ensure 2-digit hours
+                  const minutes = String(date.getMinutes()).padStart(2, "0"); // Ensure 2-digit minutes
+                  return `${year}-${month}-${day} ${hours}:${minutes}`; // Format as YYYY-MM-DD HH:mm
+                })()}
+              </td>
               <td align="right">{row.attemptNumber}</td>
               <td
                 align="right"

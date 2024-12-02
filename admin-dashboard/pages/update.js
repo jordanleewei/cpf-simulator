@@ -681,7 +681,7 @@ function UpdatePage() {
                   <p className="mb-2"><span className="underline">Question Details:</span> {compareResult.old_feedback.question.question_details}</p>
                   <p className="mb-2"><span className="underline">Answer:</span> {makeLinksClickable(compareResult.old_feedback.answer)}</p>
                   <p className="mb-2"><span className="underline">System Name:</span> {compareResult.old_feedback.system_name}</p>
-                  <p className="mb-2"><span className="underline">System URL:</span> {makeLinksClickable(compareResult.old_feedback.system_url)}</p>
+                  <p className="mb-2"><span className="underline">System URL:</span> (compareResult.old_feedback.system_url)</p>
                 </>
               ) : (
                 <p>No old feedback available.</p>

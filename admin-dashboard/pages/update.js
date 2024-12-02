@@ -371,6 +371,34 @@ function UpdatePage() {
     }
   };
 
+  const makeLinksClickable = (text) => {
+    if (!text) return null; // Handle null or undefined inputs gracefully
+  
+    // Regular expression to detect URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+    // Replace URLs in the text with anchor tags
+    const parts = text.split(urlRegex).map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 underline"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  
+    return <span>{parts}</span>;
+  };
+  
+
   // Vectorstore management handlers
   const handleUploadCsv = async () => {
     const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
@@ -651,9 +679,9 @@ function UpdatePage() {
                   <p className="mb-2"><span className="underline">Scheme:</span> {compareResult.old_feedback.question.scheme_name}</p>
                   <p className="mb-2"><span className="underline">Question Title:</span> {compareResult.old_feedback.question.title}</p>
                   <p className="mb-2"><span className="underline">Question Details:</span> {compareResult.old_feedback.question.question_details}</p>
-                  <p className="mb-2"><span className="underline">Answer:</span> {compareResult.old_feedback.answer}</p>
+                  <p className="mb-2"><span className="underline">Answer:</span> {makeLinksClickable(compareResult.old_feedback.answer)}</p>
                   <p className="mb-2"><span className="underline">System Name:</span> {compareResult.old_feedback.system_name}</p>
-                  <p className="mb-2"><span className="underline">System URL:</span> {compareResult.old_feedback.system_url}</p>
+                  <p className="mb-2"><span className="underline">System URL:</span> {makeLinksClickable(compareResult.old_feedback.system_url)}</p>
                 </>
               ) : (
                 <p>No old feedback available.</p>

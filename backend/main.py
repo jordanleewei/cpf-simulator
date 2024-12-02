@@ -13,6 +13,7 @@ from models.ai_improvements import AIImprovementsModel
 from models.manual_feedback import ManualFeedbackModel
 from models.association_tables import user_scheme_association
 from models.prompt import PromptModel
+from models.prompt_history import PromptHistoryModel
 from models.system import SystemModel
 from schemas.prompt import PromptBase
 from session import create_session, engine, open_session
@@ -1868,6 +1869,16 @@ async def create_or_update_prompt(
         existing_prompt.updated_by = current_user.name
         db.commit()
         db.refresh(existing_prompt)
+
+        # Save the current state to history
+        history_entry = PromptHistoryModel(
+            prompt_text=existing_prompt.prompt_text,
+            updated_by=existing_prompt.updated_by,
+            updated_at=existing_prompt.updated_at,
+            prompt_id=existing_prompt.prompt_id
+        )
+        db.add(history_entry)
+
         message = "Prompt updated successfully"
         prompt_data = existing_prompt.to_dict()
     else:
@@ -1876,6 +1887,17 @@ async def create_or_update_prompt(
         db.add(new_prompt)
         db.commit()
         db.refresh(new_prompt)
+
+        # Save the initial state to history
+        history_entry = PromptHistoryModel(
+            prompt_text=new_prompt.prompt_text,
+            updated_by=new_prompt.updated_by,
+            updated_at=new_prompt.updated_at,
+            prompt_id=new_prompt.prompt_id
+        )
+        db.add(history_entry)
+        db.commit()
+
         message = "Prompt updated successfully"
         prompt_data = new_prompt.to_dict()
 
@@ -1889,12 +1911,74 @@ async def delete_prompt(
     # Fetch the existing prompt
     existing_prompt = db.query(PromptModel).first()
     if existing_prompt:
+        # Delete related prompt_history rows
+        db.query(PromptHistoryModel).filter(
+            PromptHistoryModel.prompt_id == existing_prompt.prompt_id
+        ).delete(synchronize_session=False)
+
         # Delete the prompt
         db.delete(existing_prompt)
         db.commit()
         return {"message": "Reverted to default prompt."}
     else:
         return {"message": "Already using default prompt."}
+    
+@app.post("/prompt/rollback", status_code=status.HTTP_200_OK)
+async def rollback_prompt(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Fetch the current prompt
+    current_prompt = db.query(PromptModel).first()
+    if not current_prompt:
+        raise HTTPException(status_code=404, detail="No current prompt found.")
+
+    # Fetch all history entries for the current prompt, ordered by updated_at descending
+    history_entries = db.query(PromptHistoryModel).filter(
+        PromptHistoryModel.prompt_id == current_prompt.prompt_id
+    ).order_by(PromptHistoryModel.updated_at.desc()).all()
+
+    if not history_entries:
+        return JSONResponse(
+            content={"message": "No previous prompt available. Revert is not possible."},
+            status_code=200,
+        )
+
+    # Identify the latest and second latest history entries
+    latest_history = history_entries[0]
+    second_latest_history = history_entries[1] if len(history_entries) > 1 else None
+
+    if second_latest_history:
+        # Rollback to the second most recent version
+        current_prompt.prompt_text = second_latest_history.prompt_text
+        current_prompt.updated_by = current_user.name
+
+        # Delete the latest history entry (reverting its changes)
+        db.delete(latest_history)
+    else:
+        # Only one history entry exists, do nothing (frontend will handle reverting to default if needed)
+        return JSONResponse(
+            content={"message": "Only one history entry exists. Rollback not possible."},
+            status_code=200,
+        )
+
+    db.commit()
+    db.refresh(current_prompt)
+
+    return {
+        "message": "Prompt rolled back successfully",
+        "prompt": current_prompt.to_dict(),
+    }
+
+@app.get("/prompt/history/count", status_code=status.HTTP_200_OK)
+async def get_prompt_version_count(
+    db: Session = Depends(create_session),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Count the number of versions in the prompt history
+    version_count = db.query(PromptHistoryModel).count()
+
+    return {"count": version_count}
 
 @app.get("/prompt/current", status_code=status.HTTP_200_OK)
 async def get_current_prompt(

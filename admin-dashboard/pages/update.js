@@ -26,13 +26,14 @@ function UpdatePage() {
   const [compareResult, setCompareResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showRevertModal, setShowRevertModal] = useState(false);
+  const [showPromptRevertModal, setShowPromptRevertModal] = useState(false);
 
   // State variables for vectorstore management
   const [csvFile, setCsvFile] = useState(null);
   const [csvUploadMessage, setCsvUploadMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showVectorstoreRevertModal, setShowVectorstoreRevertModal] = useState(false);
 
   // State variables for system management
   const [systems, setSystems] = useState([]);
@@ -223,6 +224,88 @@ function UpdatePage() {
     }
   };
 
+  const handleRevertToPreviousPrompt = async () => {
+    const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+    const token = loggedUser ? loggedUser.access_token : null;
+  
+    if (!token) {
+      router.push("/");
+      return;
+    }
+  
+    try {
+      // Fetch the count of dynamic prompt versions
+      const versionRes = await fetch(`${API_URL}/prompt/history/count`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (versionRes.ok) {
+        const versionData = await versionRes.json();
+
+        // If there are no dynamic prompt versions, show a message and do nothing
+        if (versionData.count === 0) {
+          setPromptMessage("Cannot rollback. Only default prompt exist.");
+          return;
+        }
+  
+        // If there is only one version of the dynamic prompt, revert to default
+        if (versionData.count === 1) {
+          setPromptMessage(
+            "Only one dynamic prompt version exists. Reverting to default..."
+          );
+          await handleRevertToDefault();
+          return;
+        }
+  
+        // Rollback logic for more than one version
+        const rollbackRes = await fetch(`${API_URL}/prompt/rollback`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        if (rollbackRes.ok) {
+          const rollbackData = await rollbackRes.json();
+          setPromptMessage(rollbackData.message);
+  
+          // Fetch the updated prompt after rollback
+          const updatedRes = await fetch(`${API_URL}/prompt/current`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+  
+          if (updatedRes.ok) {
+            const updatedData = await updatedRes.json();
+            setPromptText(updatedData.prompt_text);
+            setOriginalPromptText(updatedData.prompt_text);
+            setPromptType(updatedData.prompt_type);
+            setLastUpdatedBy(updatedData.updated_by || "DEFAULT");
+            setLastUpdatedAt(
+              updatedData.updated_at
+                ? new Date(updatedData.updated_at).toLocaleString()
+                : "NO DATE AVAILABLE"
+            );
+          }
+        } else {
+          console.error("Failed to revert to previous prompt:", rollbackRes.status);
+          setPromptMessage("Failed to revert to previous prompt.");
+        }
+      } else {
+        console.error("Failed to fetch prompt version count:", versionRes.status);
+        setPromptMessage("Failed to determine prompt version count.");
+      }
+    } catch (error) {
+      console.error("Error reverting to previous prompt:", error);
+      setPromptMessage("Error reverting to previous prompt.");
+    }
+  };  
+  
   // Function to convert prompt details to CSV
   const convertPromptToExcel = () => {
     const worksheetData = [
@@ -514,8 +597,14 @@ function UpdatePage() {
                 Edit
               </button>
               <button
+                className="text-white bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-md"
+                onClick={handleRevertToPreviousPrompt} 
+              >
+                Revert to Previous Prompt
+              </button>
+              <button
                 className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
-                onClick={() => setShowRevertModal(true)}
+                onClick={() => setShowPromptRevertModal(true)}
               >
                 Revert to Default Prompt
               </button>
@@ -532,9 +621,9 @@ function UpdatePage() {
         )}
 
         {/* RevertModal */}
-        {showRevertModal && (
+        {showPromptRevertModal && (
           <RevertModal
-            setRevertModal={setShowRevertModal}
+            setRevertModal={setShowPromptRevertModal}
             handleRevert={handleRevertToDefault}  
           />
         )}
@@ -679,16 +768,16 @@ function UpdatePage() {
           </button>
           <button
             className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md w-fit"
-            onClick={() => setShowRevertModal(true)}
+            onClick={() => setShowVectorstoreRevertModal(true)}
             disabled={isUploading}
           >
             Revert to Default Vectorstore
           </button>
 
           {/* RevertModal */}
-          {showRevertModal && (
+          {showVectorstoreRevertModal && (
             <RevertModal
-              setRevertModal={setShowRevertModal}
+              setRevertModal={setShowVectorstoreRevertModal}
               handleRevert={handleRevertVectorstore}  
             />
           )}

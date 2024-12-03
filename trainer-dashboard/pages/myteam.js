@@ -8,7 +8,7 @@ import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { FaRegTrashCan } from "react-icons/fa6";
 import DeleteModal from "../components/DeleteModal";
 import { BiRefresh } from "react-icons/bi";
-import Button from "@nextui-org/react";
+import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Button } from "@nextui-org/react";
 
 function MyTeam() {
   const [allTeamMembers, setAllTeamMembers] = useState([]);
@@ -137,13 +137,13 @@ function MyTeam() {
 
   useEffect(() => {
     let filteredMembers = allTeamMembers;
-
+  
     if (schemeFilter !== "All") {
       filteredMembers = filteredMembers.filter((member) =>
         member.schemes.includes(schemeFilter)
       );
     }
-
+  
     if (search !== "") {
       filteredMembers = filteredMembers.filter(
         (member) =>
@@ -151,7 +151,7 @@ function MyTeam() {
           member.email.toLowerCase().includes(search.toLowerCase())
       );
     }
-
+  
     setDisplayMembers(filteredMembers);
   }, [schemeFilter, search, allTeamMembers]);
 
@@ -204,24 +204,35 @@ function MyTeam() {
   };
 
   const handleChange = (index, field, value) => {
+    const globalIndex = allTeamMembers.findIndex(
+      (member) => member.uuid === displayMembers[index].uuid
+    );
+  
     setAllTeamMembers((prevMembers) =>
       prevMembers.map((member, idx) =>
-        idx === index ? { ...member, [field]: value } : member
+        idx === globalIndex ? { ...member, [field]: value } : member
       )
     );
+  
     setDisplayMembers((prevMembers) =>
       prevMembers.map((member, idx) =>
         idx === index ? { ...member, [field]: value } : member
       )
     );
   };
+  
 
   const handleSchemeChange = (index, updatedSchemes) => {
+    const globalIndex = allTeamMembers.findIndex(
+      (member) => member.uuid === displayMembers[index].uuid
+    );
+  
     setAllTeamMembers((prevMembers) =>
       prevMembers.map((member, idx) =>
-        idx === index ? { ...member, schemes: updatedSchemes } : member
+        idx === globalIndex ? { ...member, schemes: updatedSchemes } : member
       )
     );
+  
     setDisplayMembers((prevMembers) =>
       prevMembers.map((member, idx) =>
         idx === index ? { ...member, schemes: updatedSchemes } : member
@@ -242,7 +253,8 @@ function MyTeam() {
           member.name !== originalMember.name ||
           member.access_rights !== originalMember.access_rights ||
           member.password !== originalMember.password ||
-          JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes)
+          JSON.stringify(member.schemes) !== JSON.stringify(originalMember.schemes),
+          member.dept !== originalMember.dept
         ) {
           const userRes = await fetch(`${API_URL}/user/${member.uuid}`, {
             method: "PUT",
@@ -254,7 +266,8 @@ function MyTeam() {
               name: member.name,
               access_rights: member.access_rights,
               schemes: member.schemes,
-              password: member.password
+              password: member.password,
+              dept: member.dept
             }),
           });
 

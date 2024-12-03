@@ -1,6 +1,7 @@
 // framework
 import { useEffect, useState } from "react";
 import { saveAs } from "file-saver";
+import * as XLSX from "xlsx";
 // components
 import CustomTable from "../components/CustomTable.jsx";
 import isAuth from "../components/isAuth.jsx";
@@ -106,7 +107,7 @@ function Profile({ user }) {
     }
   }, [user]);
 
-  const convertToCSV = (attempts) => {
+  const convertToExcel = (attempts) => {
     const headers = [
       "Name",
       "Email",
@@ -126,37 +127,52 @@ function Profile({ user }) {
       "Tone Score",
     ];
 
-    const rows = attempts.map((attempt) => [
-      userName,
-      user.email,
-      attempt.scheme_name,
-      attempt.date,
-      `"${attempt.question_title}"`,
-      `"${attempt.question_details}"`,
-      `"${attempt.attemptNumber}"`,
-      `"${attempt.answer}"`,
-      `"${attempt.system_name}"`,
-      `"${attempt.system_url}"`,
-      `"${attempt.accuracy_feedback}"`,
-      `${(attempt.accuracy_score / 5) * 100}%`,
-      `"${attempt.precision_feedback}"`,
-      `${(attempt.precision_score / 5) * 100}%`,
-      `"${attempt.tone_feedback}"`,
-      `${(attempt.tone_score / 5) * 100}%`,
-    ]);
-
-    const csvContent = [headers.join(",")];
-    rows.forEach((row) => {
-      csvContent.push(row.join(","));
+    const rows = attempts.map((attempt) => {
+      // Add 8 hours to the date and format it
+      const formattedDate = new Date(new Date(attempt.date).getTime() + 8 * 60 * 60 * 1000)
+        .toLocaleString("en-SG", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        });
+    
+      return [
+        userName,
+        user.email,
+        attempt.scheme_name,
+        formattedDate,
+        attempt.question_title,
+        attempt.question_details,
+        attempt.attemptNumber,
+        attempt.answer,
+        attempt.system_name,
+        attempt.system_url,
+        attempt.accuracy_feedback,
+        `${(attempt.accuracy_score / 5) * 100}%`,
+        attempt.precision_feedback,
+        `${(attempt.precision_score / 5) * 100}%`,
+        attempt.tone_feedback,
+        `${(attempt.tone_score / 5) * 100}%`,
+      ];
     });
 
-    return csvContent.join("\n");
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attempts");
+
+    return workbook;
   };
 
   const handleDownload = async () => {
-    const csvContent = convertToCSV(attempts);
-    const csvBlob = new Blob([csvContent], { type: "text/csv" });
-    saveAs(csvBlob, `${userName}_all_attempts.csv`);
+    const workbook = convertToExcel(attempts);
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const excelBlob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(excelBlob, `${userName}_all_attempts.xlsx`);
   };
 
   return (

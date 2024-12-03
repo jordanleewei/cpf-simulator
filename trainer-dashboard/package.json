@@ -14,6 +14,7 @@
     "@mui/material": "^5.15.15",
     "@nextui-org/react": "^2.2.10",
     "aws-sdk": "^2.1643.0",
+    "button": "^1.1.1",
     "clsx": "^2.1.1",
     "file-saver": "^2.0.5",
     "jwt-decode": "^4.0.0",

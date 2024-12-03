@@ -78,7 +78,18 @@ function UpdatePage() {
           setOriginalPromptText(data.prompt_text);
           setPromptType(data.prompt_type);
           setLastUpdatedBy(data.updated_by || "DEFAULT"); 
-          setLastUpdatedAt(data.updated_at ? new Date(data.updated_at).toLocaleString() : "NO DATE AVAILABLE"); 
+          setLastUpdatedAt(
+            data.updated_at
+              ? new Date(new Date(data.updated_at).getTime() + 8 * 60 * 60 * 1000).toLocaleString("en-SG", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hourCycle: "h23",
+                })
+              : "NO DATE AVAILABLE"
+          ); 
         } else {
           console.error("Failed to fetch prompt:", res.status);
           // Handle unauthorized access
@@ -679,7 +690,26 @@ function UpdatePage() {
                   <p className="mb-2"><span className="underline">Scheme:</span> {compareResult.old_feedback.question.scheme_name}</p>
                   <p className="mb-2"><span className="underline">Question Title:</span> {compareResult.old_feedback.question.title}</p>
                   <p className="mb-2"><span className="underline">Question Details:</span> {compareResult.old_feedback.question.question_details}</p>
-                  <p className="mb-2"><span className="underline">Answer:</span> {makeLinksClickable(compareResult.old_feedback.answer)}</p>
+                  <p className="mb-2">
+                    <span className="underline">User and Date of Attempt:</span>{" "}
+                    {compareResult.old_feedback.user_name},{" "}
+                    {new Date(
+                      new Date(compareResult.old_feedback.date).getTime() + 8 * 60 * 60 * 1000 // Adjust for SG timezone (if necessary)
+                    ).toLocaleString("en-SG", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hourCycle: "h23",
+                    })}
+                  </p>
+                  <p className="mb-2">
+                    <span className="underline">Answer:</span>{" "}
+                    <span style={{ whiteSpace: "pre-wrap" }}>
+                      {makeLinksClickable(compareResult.old_feedback.answer)}
+                    </span>
+                  </p>
                   <p className="mb-2"><span className="underline">System Name:</span> {compareResult.old_feedback.system_name}</p>
                   <p className="mb-2"><span className="underline">System URL:</span> {compareResult.old_feedback.system_url}</p>
                 </>

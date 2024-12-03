@@ -1296,7 +1296,15 @@ async def compare_latest_feedback(
 
     logging.info(f"Found latest attempt: {latest_attempt.attempt_id}")
 
-    # Step 2: Fetch the corresponding question for context
+    # Step 2: Fetch the corresponding user for the attempt
+    user = db.query(UserModel).filter(UserModel.uuid == latest_attempt.user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    logging.info(f"Found user: {user.name}")
+
+    # Step 3: Fetch the corresponding question for context
     question = db.query(QuestionModel).filter(
         QuestionModel.question_id == latest_attempt.question_id
     ).first()
@@ -1306,7 +1314,7 @@ async def compare_latest_feedback(
 
     logging.info(f"Found question: {question.title}")
 
-    # Step 3: Use the same answer and re-run it with the new prompt to get new feedback
+    # Step 4: Use the same answer and re-run it with the new prompt to get new feedback
     new_response = openAI_response(
         question=question.question_details,
         response=latest_attempt.answer,  # The same answer from the latest attempt
@@ -1318,7 +1326,7 @@ async def compare_latest_feedback(
         prompt_text=request.prompt_text  # The new prompt provided for comparison
     )
 
-    # Step 4: Process the new response (to extract scores and feedback)
+    # Step 5: Process the new response (to extract scores and feedback)
     new_feedback = process_response(new_response)
 
     logging.info("New feedback generated using the new prompt")
@@ -1327,6 +1335,8 @@ async def compare_latest_feedback(
     old_feedback = {
         "question": question,
         "answer": latest_attempt.answer,
+        "user_name": user.name,
+        "date": latest_attempt.date,
         "system_name": latest_attempt.system_name,
         "system_url": latest_attempt.system_url,
         "precision_score": latest_attempt.precision_score,

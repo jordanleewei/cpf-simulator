@@ -95,22 +95,34 @@ function ReviewPage() {
       "Tone Score",
     ];
 
-    // Generate rows
-    const row = [
-      userProfile.name,
-      userProfile.email,
-      attempt.scheme_name,
-      `"${attempt.date}"`,
-      `"${attempt.title}"`,
-      `"${attempt.question_details}"`,
-      `"${attempt.answer}"`,
-      `"${attempt.accuracy_feedback}"`,
-      `${(attempt.accuracy_score / 5) * 100}%`,
-      `"${attempt.precision_feedback}"`,
-      `${(attempt.precision_score / 5) * 100}%`,
-      `"${attempt.tone_feedback}"`,
-      `${(attempt.tone_score / 5) * 100}%`,
-    ];
+    // Add 8 hours to the UTC date
+    const adjustedDate = attempt.date
+    ? new Date(new Date(attempt.date).getTime() + 8 * 60 * 60 * 1000).toLocaleString("en-SG", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      })
+    : "N/A";
+
+  // Generate rows
+  const row = [
+    userProfile.name,
+    userProfile.email,
+    attempt.scheme_name,
+    `"${adjustedDate}"`,
+    `"${attempt.title}"`,
+    `"${attempt.question_details}"`,
+    `"${attempt.answer}"`,
+    `"${attempt.accuracy_feedback}"`,
+    `${(attempt.accuracy_score / 5) * 100}%`,
+    `"${attempt.precision_feedback}"`,
+    `${(attempt.precision_score / 5) * 100}%`,
+    `"${attempt.tone_feedback}"`,
+    `${(attempt.tone_score / 5) * 100}%`,
+  ];
 
     // Combine headers and row
     const csvContent = [headers];
@@ -176,7 +188,12 @@ function ReviewPage() {
                 <div className="p-4">
                   <RadialGraph data={i} label={i.label} />
                 </div>
-                <div className="h-24 text-base text-justify">{i.feedback}</div>
+                {/* Make the feedback scrollable */}
+                <div
+                  className="h-30 text-base text-justify overflow-y-scroll p-2 bg-light-grey rounded-md"
+                >
+                  {i.feedback}
+                </div>
               </div>
             ))}
           </div>

@@ -7,6 +7,7 @@ import { FaRegTrashCan } from "react-icons/fa6";
 import SaveModal from "../components/SaveModal";
 import RevertModal from "../components/RevertModal";
 import UploadModal from "../components/UploadModal";
+import UpdateModal from "../components/UpdateModal";
 import * as XLSX from 'xlsx';
 import Download from "@mui/icons-material/SimCardDownloadOutlined";
 
@@ -27,6 +28,8 @@ function UpdatePage() {
   const [loading, setLoading] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showPromptRevertModal, setShowPromptRevertModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
 
   // State variables for vectorstore management
   const [csvFile, setCsvFile] = useState(null);
@@ -121,6 +124,40 @@ function UpdatePage() {
   }, [router]);
 
   // Prompt management handlers
+  const handleUpdateAllAttempts = async () => {
+    const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
+    const token = loggedUser ? loggedUser.access_token : null;
+
+    setLoadingUpdate(true); // Start loading spinner
+  
+    try {
+      const response = await fetch(`${API_URL}/attempt/update_all`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("Failed to update attempts:", error);
+        alert("Failed to update attempts. Check the console for details.");
+        setLoadingUpdate(false); // Stop spinner
+        return;
+      }
+  
+      const result = await response.json();
+      console.log("Attempts updated successfully:", result);
+      alert(result.message);
+    } catch (error) {
+      console.error("Error updating attempts:", error);
+      alert("An error occurred while updating attempts. Check the console for details.");
+    } finally {
+      setLoadingUpdate(false); // Stop loading spinner
+    }
+  };
+
   const handleUpdatePrompt = async () => {
     // Retrieve the token from localStorage
     const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
@@ -628,25 +665,61 @@ function UpdatePage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-row gap-2">
-              <button
-                className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
-                onClick={() => setEditPromptState(true)}
-              >
-                Edit
-              </button>
-              <button
-                className="text-white bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-md"
-                onClick={handleRevertToPreviousPrompt} 
-              >
-                Revert to Previous Prompt
-              </button>
-              <button
-                className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
-                onClick={() => setShowPromptRevertModal(true)}
-              >
-                Revert to Default Prompt
-              </button>
+            <div className="flex flex-row gap-2 w-full items-center">
+              <div className="flex flex-row gap-2">
+                <button
+                  className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
+                  onClick={() => setEditPromptState(true)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="text-white bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-md"
+                  onClick={handleRevertToPreviousPrompt}
+                >
+                  Revert to Previous Prompt
+                </button>
+                <button
+                  className="text-white bg-red-500 hover:bg-red-700 px-4 py-2 rounded-md"
+                  onClick={() => setShowPromptRevertModal(true)}
+                >
+                  Revert to Default Prompt
+                </button>
+              </div>
+              {/* Push Update All Attempts button to the right */}
+              <div className="ml-auto relative">
+                {loadingUpdate && (
+                  <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
+                    <svg
+                      className="animate-spin h-12 w-12 text-dark-green"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      ></path>
+                    </svg>
+                  </div>
+                )}
+                <button
+                  className="text-white bg-dark-green hover:bg-darker-green px-4 py-2 rounded-md"
+                  onClick={() => setShowUpdateModal(true)}
+                  disabled={loadingUpdate} // Disable button during loading
+                >
+                  Update All Attempts
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -664,6 +737,14 @@ function UpdatePage() {
           <RevertModal
             setRevertModal={setShowPromptRevertModal}
             handleRevert={handleRevertToDefault}  
+          />
+        )}
+
+        {/* UpdateModal */}
+        {showUpdateModal && (
+          <UpdateModal
+            setShowModal={setShowUpdateModal}
+            handleUpdate={handleUpdateAllAttempts} // Pass your update function here
           />
         )}
 
@@ -755,7 +836,7 @@ function UpdatePage() {
         <div className="w-full h-max-content flex justify-end items-center font-bold">
             <button type="button" className="button" onClick={handleDownloadExcel}>
               <Download fontSize="medium" />
-              Download Excel
+              Download
             </button>
         </div>
     

@@ -37,52 +37,63 @@ function Exercises() { // Remove the 'user' parameter
 
   useEffect(() => {
     async function getQuestions() {
-      const userString = localStorage.getItem("loggedUser");
+        const userString = localStorage.getItem("loggedUser");
 
-      if (!userString) {
-        // If there's no user in localStorage, redirect to the login page
-        router.push("/");
-        return;
+        if (!userString) {
+            // If there's no user in localStorage, redirect to the login page
+            router.push("/");
+            return;
+        }
+
+        const user = JSON.parse(userString);
+
+        if (!user || !user.uuid) {
+            // If user or user.uuid is null/undefined, redirect to the login page
+            router.push("/");
+            return;
+        }
+
+        if (router.isReady) {
+            const scheme_name = router.query.slug;
+            window.localStorage.setItem("schemeName", scheme_name);
+
+            try {
+                const res = await fetch(
+                    `${API_URL}/table/${user.uuid}/${scheme_name}`
+                );
+
+                let questions = await res.json();
+
+                // Ensure questions is an array and sort it by 'created' date
+                if (Array.isArray(questions)) {
+                    questions.sort((a, b) => new Date(b.created) - new Date(a.created));
+                } else {
+                    questions = []; // Fallback to empty array
+                }
+
+                // Transform the scheme_name for each question
+                const transformedQuestions = questions.map((question) => ({
+                    ...question,
+                    scheme_name: {
+                        ...question.scheme_name,
+                        scheme_name: question.scheme_name.scheme_name.charAt(0).toUpperCase() + question.scheme_name.scheme_name.slice(1).toLowerCase()
+                    }
+                }));
+
+                setAllQuestions(transformedQuestions);
+                setFilteredQuestions(transformedQuestions); // Initialize filteredQuestions
+                setName(scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1).toLowerCase());
+            } catch (error) {
+                console.error("Failed to fetch questions:", error);
+                setAllQuestions([]); // Fallback to empty array
+                setFilteredQuestions([]); // Handle filteredQuestions when no questions are present
+            }
+        }
       }
 
-      const user = JSON.parse(userString);
-
-      if (!user || !user.uuid) {
-        // If user or user.uuid is null/undefined, redirect to the login page
-        router.push("/");
-        return;
-      }
-
-      if (router.isReady) {
-        const scheme_name = router.query.slug;
-        window.localStorage.setItem("schemeName", scheme_name);
-
-        const res = await fetch(
-          `${API_URL}/table/${user.uuid}/${scheme_name}`
-        );
-        const questions = await res.json();
-
-        // Sort questions by 'created' date in descending order
-        const sortedQuestions = questions.sort((a, b) => 
-          new Date(b.created) - new Date(a.created)
-        );
-
-        // Transform the scheme_name and set the sorted questions
-        const transformedQuestions = sortedQuestions.map((question) => ({
-          ...question,
-          scheme_name: {
-            ...question.scheme_name,
-            scheme_name: question.scheme_name.scheme_name.charAt(0).toUpperCase() + question.scheme_name.scheme_name.slice(1).toLowerCase()
-          }
-        }));
-
-        setAllQuestions(transformedQuestions);
-        setName(scheme_name.charAt(0).toUpperCase() + scheme_name.slice(1).toLowerCase());
-      }
-    }
-
-    getQuestions();
+      getQuestions();
   }, [router.isReady]);
+
 
   useEffect(() => {
     const filterQuestions = () => {
@@ -210,57 +221,65 @@ function Exercises() { // Remove the 'user' parameter
             </thead>
 
             <tbody>
-              {filteredQuestions.map((question, index) => (
-                <tr
-                  key={index + 1}
-                  className="hover:bg-light-gray hover:cursor-pointer group relative"
-                >
-                  <td
-                    className={`${tableCenterCellStyle}`}
-                    style={{ height: `${imageHeight}px`, padding: `6px 8px` }}
+              {filteredQuestions.length > 0 ? (
+                filteredQuestions.map((question, index) => (
+                  <tr
+                    key={index + 1}
+                    className="hover:bg-light-gray hover:cursor-pointer group relative"
                   >
-                    {question.status === "completed" && (
-                      <Image
-                        src={tickimage}
-                        alt="Status"
-                        style={{ margin: "0 auto" }}
-                      />
-                    )}
-                  </td>
-                  <td
-                    className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
-                    onClick={() => handleQuestionNav(question.question_id)}
-                  >
-                    {`${index + 1}. ${question.title}`}
-                    
-                    {/* Tooltip for question preview */}
-                    <div
+                    <td
+                      className={`${tableCenterCellStyle}`}
+                      style={{ height: `${imageHeight}px`, padding: `6px 8px` }}
+                    >
+                      {question.status === "completed" && (
+                        <Image
+                          src={tickimage}
+                          alt="Status"
+                          style={{ margin: "0 auto" }}
+                        />
+                      )}
+                    </td>
+                    <td
+                      className={`${tableCellStyle} hover:underline hover:underline-offset-2`}
+                      onClick={() => handleQuestionNav(question.question_id)}
+                    >
+                      {`${index + 1}. ${question.title}`}
+                      
+                      {/* Tooltip for question preview */}
+                      <div
                         className="absolute left-0 top-full mt-1 w-64 p-2 text-sm bg-gray-700 text-white rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
                         style={{ whiteSpace: "normal" }} // Ensures multi-line preview if content is long
+                      >
+                        {question.question_details
+                          ? question.question_details.substring(0, 100) + "..."
+                          : "No preview available"}
+                      </div>
+                    </td>
+                    <td
+                      className={`${tableCenterCellStyle} ${getdifficultyColor(
+                        question.question_difficulty
+                      )}`}
                     >
-                      {question.question_details
-                        ? question.question_details.substring(0, 100) + "..."
-                        : "No preview available"}
-                    </div>
-                  </td>
-                  <td
-                    className={`${tableCenterCellStyle} ${getdifficultyColor(
-                      question.question_difficulty
-                    )}`}
-                  >
-                    {question.question_difficulty}
-                  </td>
-                  <td className={`${tableCenterCellStyle}`}>
-                  {formatDate(question.created)}
-                  </td>
-                  <td
-                    className={`${tableCenterCellStyle} hover:underline hover:underline-offset-2 `}
-                    onClick={() => handleReviewNav(question.attempt)}
-                  >
-                    {question.attempt ? "Click to view latest attempt" : null}
+                      {question.question_difficulty}
+                    </td>
+                    <td className={`${tableCenterCellStyle}`}>
+                      {formatDate(question.created)}
+                    </td>
+                    <td
+                      className={`${tableCenterCellStyle} hover:underline hover:underline-offset-2`}
+                      onClick={() => handleReviewNav(question.attempt)}
+                    >
+                      {question.attempt ? "Click to view latest attempt" : null}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center py-4">
+                    No questions found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

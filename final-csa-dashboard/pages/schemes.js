@@ -24,15 +24,17 @@ function Schemes({ user }) {
           });
           if (res.ok) {
             const schemeData = await res.json();
-
-            // Transform scheme names
-            const transformedSchemes = schemeData.map((scheme) => ({
-              ...scheme,
-              scheme_name:
-                scheme.scheme_name.charAt(0).toUpperCase() +
-                scheme.scheme_name.slice(1).toLowerCase(),
-            }));
-
+  
+            // Transform and sort scheme names alphabetically
+            const transformedSchemes = schemeData
+              .map((scheme) => ({
+                ...scheme,
+                scheme_name:
+                  scheme.scheme_name.charAt(0).toUpperCase() +
+                  scheme.scheme_name.slice(1).toLowerCase(),
+              }))
+              .sort((a, b) => a.scheme_name.localeCompare(b.scheme_name)); // Sort by scheme_name alphabetically
+  
             setSchemes(transformedSchemes);
           } else {
             console.error("Failed to fetch schemes:", res.status);

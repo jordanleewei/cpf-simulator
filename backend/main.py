@@ -372,8 +372,21 @@ async def delete_user(
         # Fetch all attempts made by the user
         user_attempts = db.query(AttemptModel).filter(AttemptModel.user_id == user_id).all()
 
+        # If no attempts, delete the user immediately
         if not user_attempts:
-            return {"message": "No attempts found for the user."}
+            logging.info(f"No attempts found for user {user_id}. Deleting user immediately.")
+            # Remove user from all schemes
+            db.query(user_scheme_association).filter(
+                user_scheme_association.c.user_table_id == user_id
+            ).delete(synchronize_session=False)
+            logging.info(f"Removed user {user_id} from all schemes")
+
+            # Delete the user
+            db.delete(db_user)
+            db.commit()
+            logging.info(f"User {user_id} deleted successfully without any associated attempts")
+
+            return JSONResponse(content={'message': 'User without attempts deleted'}, status_code=201)
 
         # Delete related manual feedback and AI improvements
         for attempt in user_attempts:
@@ -381,14 +394,14 @@ async def delete_user(
             db.query(ManualFeedbackModel).filter(
                 ManualFeedbackModel.attempt_id == attempt.attempt_id
             ).delete(synchronize_session=False)
-            logging.info(f"Deleted manual feedbacks")
+            logging.info(f"Deleted manual feedbacks for attempt {attempt.attempt_id}")
 
             # Delete AI improvement records associated with the question and user
             db.query(AIImprovementsModel).filter(
                 AIImprovementsModel.question_id == attempt.question_id,
                 AIImprovementsModel.user_id == user_id
             ).delete(synchronize_session=False)
-            logging.info(f"Deleted AI Improvements")
+            logging.info(f"Deleted AI improvements for attempt {attempt.attempt_id}")
 
             # Delete the attempt
             logging.info(f"Deleting attempt: {attempt.attempt_id}")
@@ -403,7 +416,7 @@ async def delete_user(
         # Finally, delete the user
         db.delete(db_user)
         db.commit()
-        logging.info(f"User {user_id} deleted successfully")
+        logging.info(f"User {user_id} and associated data deleted successfully")
 
         return JSONResponse(content={'message': 'User and associated data deleted'}, status_code=201)
 

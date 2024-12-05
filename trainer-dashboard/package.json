@@ -16,6 +16,7 @@
     "aws-sdk": "^2.1643.0",
     "button": "^1.1.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.2.2",
     "file-saver": "^2.0.5",
     "jwt-decode": "^4.0.0",
     "next": "latest",

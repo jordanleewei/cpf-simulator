@@ -1,4 +1,5 @@
 // framework
+import DOMPurify from "dompurify";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import isAuth from "../components/isAuth.jsx"; 
@@ -122,6 +123,22 @@ function UpdatePage() {
     fetchPrompt();
     fetchSystems();
   }, [router]);
+
+  // Sanitize HTML content to prevent XSS
+  const createSafeHTML = (html) => {
+    if (typeof window !== "undefined") {
+      const sanitizedHtml = DOMPurify.sanitize(html);
+  
+      // Add styling for hyperlinks
+      const styledHtml = sanitizedHtml.replace(
+        /<a /g,
+        `<a style="color: blue; text-decoration: underline;" `
+      );
+  
+      return { __html: styledHtml };
+    }
+    return { __html: html }; // Fallback for SSR
+  };
 
   // Prompt management handlers
   const handleUpdateAllAttempts = async () => {
@@ -418,35 +435,7 @@ function UpdatePage() {
       setLoading(false); 
     }
   };
-
-  const makeLinksClickable = (text) => {
-    if (!text) return null; // Handle null or undefined inputs gracefully
   
-    // Regular expression to detect URLs
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
-    // Replace URLs in the text with anchor tags
-    const parts = text.split(urlRegex).map((part, index) => {
-      if (urlRegex.test(part)) {
-        return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 underline"
-          >
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
-  
-    return <span>{parts}</span>;
-  };
-  
-
   // Vectorstore management handlers
   const handleUploadCsv = async () => {
     const loggedUser = JSON.parse(window.localStorage.getItem("loggedUser"));
@@ -787,9 +776,12 @@ function UpdatePage() {
                   </p>
                   <p className="mb-2">
                     <span className="underline">Answer:</span>{" "}
-                    <span style={{ whiteSpace: "pre-wrap" }}>
-                      {makeLinksClickable(compareResult.old_feedback.answer)}
-                    </span>
+                    <span
+                      style={{
+                        whiteSpace: "pre-wrap",
+                      }}
+                      dangerouslySetInnerHTML={createSafeHTML(compareResult?.old_feedback?.answer || "")}
+                    />
                   </p>
                   <p className="mb-2"><span className="underline">System Name:</span> {compareResult.old_feedback.system_name}</p>
                   <p className="mb-2"><span className="underline">System URL:</span> {compareResult.old_feedback.system_url}</p>

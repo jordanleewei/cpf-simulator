@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { IoIosArrowBack, IoMdAdd, IoMdRemove } from "react-icons/io";
 import { FaChevronDown } from "react-icons/fa";
-
+import dynamic from "next/dynamic";
 import QuestionBar from "../../components/QuestionBar";
 import isAuth from "../../components/isAuth";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import "react-quill/dist/quill.snow.css"; // React Quill styling
 
 function Question({ user }) {
   // Get API URL from environment variables
@@ -19,26 +22,6 @@ function Question({ user }) {
   const [systems, setSystems] = useState([{ name: "", url: "" }]);
   const [systemOptions, setSystemOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState([false]); // Initialize dropdown state
-
-  // Predefined system names
-  // const systemOptions = [
-  //   { name: "NICE 2.0", url: "https://cpfNICE 2.0.my.salesforce.com/" },
-  //   { name: "BEACON", url: "https://beacon.cpf.gov.sg/" },
-  //   { name: "CPF Super Admin Modules", url: "https://web-eservices.cpfb.gov.sg/admin/cseadmin" },
-  //   { name: "CPF website", url: "https://www.cpf.gov.sg/" },
-  //   { name: "ARISE Employer Portal", url: "https://ariseempr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
-  //   { name: "ARISE Member Portal", url: "https://arisembr.cpf.gov.sg/prweb/PRWebLDAP1/app/default/LspSuipRFrhr76Wi-AjAJoda-RkmftRx*/!STANDARD" },
-  //   { name: "CAYE Admin Portal", url: "https://intraprod-caye.cpf.gov.sg/caye/admin/web/" },
-  //   { name: "ERT Admin (CPF EZPay Admin Portal)", url: "https://intraprod2.cpf.gov.sg/ertadmin/loginForm.jsp" },
-  //   { name: "iQMS (eAppointment system)", url: "https://iqmsadmin.cpf.gov.sg/signin" },
-  //   { name: "CareShield Life Biz Portal", url: "https://hc-cbp-prd.careshieldlife.gov.sg/cbp/web/CISFNC00001" },
-  //   { name: "CareShield Life Website", url: "https://www.careshieldlife.gov.sg/" },
-  //   { name: "E-Housing Portal", url: "https://hseintra.cpf.gov.sg/hseadmin/login.jsp" },
-  //   { name: "DBC – Workfare Application", url: "Accessible via Start menu > All apps > DBC Application 7.3.6 > Workfare Applications" },
-  //   { name: "NPHC", url: "https://intranet-nphc.moh.gov.sg/" },
-  //   { name: "Mainframe/Mainframe WFH container", url: "https://cpfwiardsav05p.cpf.net/rdweb" },
-  //   { name: "Finesse (IPCC)", url: "https://ipclafinav01p.ipcc.cpf.gov.sg/desktop/container/landing.jsp?locale=en_US" }
-  // ];
 
   useEffect(() => {
     async function fetchSystems() {
@@ -168,16 +151,27 @@ function Question({ user }) {
             <p id="question-content">{question.question_details}</p>
           </div>
           <div className="ml-20 mb-3 font-bold text-xl">Your Answer</div>
-          <div
-            className="border-4 border-solid border-dark-green rounded-lg p-5 mt-30 flex-col ml-20 mr-20 overflow-auto"
-            style={{ height: 300 }}
-          >
-            <textarea
+          <div className="border-4 border-solid border-dark-green rounded-lg p-10 h-max-content flex items-start justify-center text-black mt-30 ml-20 mr-20 mb-5">
+            {/* React Quill Editor */}
+            <ReactQuill
+              theme="snow"
+              value={answer}
+              onChange={setAnswer}
               placeholder="Please enter your reply here"
-              className="w-full h-full bg-transparent"
-              name="user-response"
-              id="user-response"
-              onChange={(e) => setAnswer(e.target.value)}
+              style={{
+                width: "100%",
+                minHeight: "200px", // Match the height of the outer container
+                display: "flex",
+                flexDirection: "column",
+              }}
+              modules={{
+                toolbar: [
+                  [{ header: [1, 2, 3, false] }],
+                  ["bold", "italic", "underline", "link"], // Include link option
+                  [{ list: "ordered" }, { list: "bullet" }],
+                  ["clean"],
+                ],
+              }}
             />
           </div>
 

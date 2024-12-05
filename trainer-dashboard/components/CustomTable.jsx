@@ -10,11 +10,13 @@ import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { useRouter } from "next/navigation";
 import ProfileSearchBar from "./ProfileSearchBar";
+import KeywordSearchBar from "./KeywordSearchBar";
 
 export default function TableCustomized({ rows, user_id }) {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(6);
   const [filterScheme, setFilterScheme] = React.useState("");
+  const [keyword, setKeyword] = React.useState("");
 
   const router = useRouter();
 
@@ -64,16 +66,20 @@ export default function TableCustomized({ rows, user_id }) {
     );
   }
 
-  // Filter rows based on scheme name
-  const filteredRows = rows.filter((row) =>
-    row.scheme_name.toLowerCase().includes(filterScheme.toLowerCase())
-  );
+  // Filter rows based on scheme name and keyword
+  const filteredRows = rows.filter((row) => {
+    const matchesScheme = row.scheme_name.toLowerCase().includes(filterScheme.toLowerCase());
+    const matchesKeyword = row.question_details?.toLowerCase().includes(keyword.toLowerCase());
+    return matchesScheme && matchesKeyword;
+  });
 
   return (
     <Root sx={{ maxWidth: "100%", width: "100%" }}>
-      {/* SearchBar component */}
-      <ProfileSearchBar setSearch={setFilterScheme} /> 
-
+      {/* Search Bars */}
+      <div className="flex gap-4 mb-4">
+        <ProfileSearchBar setSearch={setFilterScheme} />
+        <KeywordSearchBar setSearch={setKeyword} />
+      </div>
       <table aria-label="custom pagination table">
         <thead>
           <tr>

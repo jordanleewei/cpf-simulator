@@ -1,4 +1,5 @@
 // framework
+import DOMPurify from "dompurify";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { saveAs } from "file-saver";
@@ -56,6 +57,22 @@ function ReviewPage() {
     getAttempt();
     getUser();
   }, [router.isReady]);
+
+  // Sanitize HTML content to prevent XSS
+  const createSafeHTML = (html) => {
+    if (typeof window !== "undefined") {
+      const sanitizedHtml = DOMPurify.sanitize(html);
+  
+      // Add styling for hyperlinks
+      const styledHtml = sanitizedHtml.replace(
+        /<a /g,
+        `<a style="color: blue; text-decoration: underline;" `
+      );
+  
+      return { __html: styledHtml };
+    }
+    return { __html: html }; // Fallback for SSR
+  };
 
   const feedbackData = [
     {
@@ -158,7 +175,11 @@ function ReviewPage() {
           </div>
           <div className="pl-4 pr-4 mb-4">
             <h3 className="font-bold">Your Answer:</h3>
-            <p style={{ whiteSpace: "pre-wrap" }}>{attempt.answer}</p>
+            {/* Render the answer as sanitized HTML */}
+            <div
+              style={{ whiteSpace: "pre-wrap" }}
+              dangerouslySetInnerHTML={createSafeHTML(attempt.answer)}
+            />
           </div>
           <div className="pl-4 pr-4 mb-4">
             <h3 className="font-bold">Your System Name Answer:</h3>
